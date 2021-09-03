@@ -7,8 +7,10 @@ import (
 
 var ErrInvalidString = errors.New("invalid string")
 
-const zeroCode int32 = 48
-const escapeCode = 92
+const (
+	zeroCode   int32 = 48
+	escapeCode int32 = 92
+)
 
 func multiplyRune(b *strings.Builder, code int32, count int32) {
 	var i int32
@@ -31,20 +33,21 @@ func isRuneEscape(code int32) bool {
 
 func Unpack(str string) (string, error) {
 	builder := strings.Builder{}
+
+	escaped := false
 	var current int32 = -1
-	var escaped bool = false
 
 	for _, code := range str {
-		if isRuneInteger(code) && !escaped {
-			// if string starts by digit or two digits-neighbors were found then return error
+		switch {
+		case !escaped && isRuneEscape(code):
+			escaped = true
+		case !escaped && isRuneInteger(code):
 			if current == -1 {
 				return "", ErrInvalidString
 			}
 			multiplyRune(&builder, current, runeToInt32(code))
 			current = -1
-		} else if isRuneEscape(code) && !escaped {
-			escaped = true
-		} else {
+		default:
 			if current != -1 {
 				builder.WriteRune(current)
 			}
@@ -53,7 +56,7 @@ func Unpack(str string) (string, error) {
 		}
 	}
 	// the last character if string isn't ended by digit
-	if current != -1 {
+	if current != -1 && !escaped {
 		builder.WriteRune(current)
 	}
 
