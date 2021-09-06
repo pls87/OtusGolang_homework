@@ -20,7 +20,7 @@ func multiplyRune(b *strings.Builder, code int32, count int32) {
 }
 
 func isRuneInteger(code int32) bool {
-	return code >= zeroCode && code < zeroCode+10
+	return code >= zeroCode && code <= zeroCode+9
 }
 
 func runeToInt32(code int32) int32 {
@@ -55,9 +55,13 @@ func Unpack(str string) (string, error) {
 			escaped = false
 		}
 	}
-	// the last character if string isn't ended by digit
+	// the last character if string isn't ended by digit or backslash
 	if current != -1 && !escaped {
 		builder.WriteRune(current)
+	}
+	// the last character is backslash
+	if current == -1 && escaped {
+		return "", ErrInvalidString
 	}
 
 	return builder.String(), nil
