@@ -5,7 +5,10 @@ import (
 	"strings"
 )
 
-var ErrInvalidString = errors.New("invalid string")
+var (
+	ErrInvalidString = errors.New("invalid string")
+	NotADigit        = errors.New("rune is not a digit")
+)
 
 const (
 	zeroCode   int32 = 48
@@ -23,8 +26,11 @@ func isRuneInteger(code int32) bool {
 	return code >= zeroCode && code <= zeroCode+9
 }
 
-func runeToInt32(code int32) int32 {
-	return code - zeroCode
+func runeDigitToInt32(code int32) (int32, error) {
+	if !isRuneInteger(code) {
+		return -1, NotADigit
+	}
+	return code - zeroCode, nil
 }
 
 func isRuneEscape(code int32) bool {
@@ -45,7 +51,8 @@ func Unpack(str string) (string, error) {
 			if current == -1 {
 				return "", ErrInvalidString
 			}
-			multiplyRune(&builder, current, runeToInt32(code))
+			digit, _ := runeDigitToInt32(code)
+			multiplyRune(&builder, current, digit)
 			current = -1
 		default:
 			if current != -1 {
