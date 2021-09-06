@@ -81,7 +81,7 @@ func TestRuneDigitToInt32(t *testing.T) {
 				require.NoError(t, err)
 				require.Equal(t, tc.expectedResult, result)
 			} else {
-				require.Truef(t, errors.Is(err, NotADigit), "actual error %q", err)
+				require.Truef(t, errors.Is(err, ErrRuneIsNotADigit), "actual error %q", err)
 			}
 		})
 	}

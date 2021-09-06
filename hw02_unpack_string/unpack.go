@@ -6,8 +6,8 @@ import (
 )
 
 var (
-	ErrInvalidString = errors.New("invalid string")
-	NotADigit        = errors.New("rune is not a digit")
+	ErrInvalidString   = errors.New("invalid string")
+	ErrRuneIsNotADigit = errors.New("rune is not a digit")
 )
 
 const (
@@ -28,7 +28,7 @@ func isRuneInteger(code int32) bool {
 
 func runeDigitToInt32(code int32) (int32, error) {
 	if !isRuneInteger(code) {
-		return -1, NotADigit
+		return -1, ErrRuneIsNotADigit
 	}
 	return code - zeroCode, nil
 }
