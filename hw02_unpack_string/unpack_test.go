@@ -15,22 +15,22 @@ func seedRandom() {
 	rand.Seed(42)
 }
 
-func TestMultiplyRune(t *testing.T) {
+func TestWriteRunes2Builder(t *testing.T) {
 	cases := []struct {
-		rune           int32
+		code           rune
 		count          int32
 		expectedResult string
 	}{
-		{rune: 65, count: 5, expectedResult: "AAAAA"},
-		{rune: 73, count: 9, expectedResult: "IIIIIIIII"},
-		{rune: 70, count: 0, expectedResult: ""},
+		{code: 65, count: 5, expectedResult: "AAAAA"},
+		{code: 73, count: 9, expectedResult: "IIIIIIIII"},
+		{code: 70, count: 0, expectedResult: ""},
 	}
 
 	for _, tc := range cases {
 		tc := tc
-		t.Run(strconv.QuoteRune(tc.rune), func(t *testing.T) {
+		t.Run(strconv.QuoteRune(tc.code), func(t *testing.T) {
 			builder := strings.Builder{}
-			multiplyRune(&builder, tc.rune, tc.count)
+			writeRunes2Builder(&builder, tc.code, tc.count)
 			require.Equal(t, tc.expectedResult, builder.String())
 		})
 	}
@@ -40,42 +40,42 @@ func TestIsRuneEscape(t *testing.T) {
 	seedRandom()
 
 	cases := []struct {
-		rune           int32
+		code           rune
 		expectedResult bool
 	}{
-		{rune: 92, expectedResult: true},
-		{rune: rand.Int31n(92), expectedResult: false},
-		{rune: rand.Int31n(math.MaxInt32-93) + 93, expectedResult: false},
+		{code: 92, expectedResult: true},
+		{code: rand.Int31n(92), expectedResult: false},
+		{code: rand.Int31n(math.MaxInt32-93) + 93, expectedResult: false},
 	}
 
 	for _, tc := range cases {
 		tc := tc
-		t.Run(strconv.QuoteRune(tc.rune), func(t *testing.T) {
-			require.Equal(t, tc.expectedResult, isRuneEscape(tc.rune))
+		t.Run(strconv.QuoteRune(tc.code), func(t *testing.T) {
+			require.Equal(t, tc.expectedResult, isRuneEscape(tc.code))
 		})
 	}
 }
 
-func TestRuneDigitToInt32(t *testing.T) {
+func TestRuneDigit2Int32(t *testing.T) {
 	seedRandom()
 	cases := []struct {
-		rune           int32
+		code           rune
 		expectedResult int32
 		success        bool
 	}{
-		{rune: 48, expectedResult: 0, success: true},
-		{rune: 57, expectedResult: 9, success: true},
-		{rune: 55, expectedResult: 7, success: true},
-		{rune: 47, expectedResult: -1, success: false},
-		{rune: 58, expectedResult: -1, success: false},
-		{rune: rand.Int31n(48), expectedResult: -1, success: false},
-		{rune: rand.Int31n(math.MaxInt32-58) + 58, expectedResult: -1, success: false},
+		{code: 48, expectedResult: 0, success: true},
+		{code: 57, expectedResult: 9, success: true},
+		{code: 55, expectedResult: 7, success: true},
+		{code: 47, expectedResult: -1, success: false},
+		{code: 58, expectedResult: -1, success: false},
+		{code: rand.Int31n(48), expectedResult: -1, success: false},
+		{code: rand.Int31n(math.MaxInt32-58) + 58, expectedResult: -1, success: false},
 	}
 
 	for _, tc := range cases {
 		tc := tc
-		t.Run(strconv.QuoteRune(tc.rune), func(t *testing.T) {
-			result, err := runeDigitToInt32(tc.rune)
+		t.Run(strconv.QuoteRune(tc.code), func(t *testing.T) {
+			result, err := runeDigit2Int32(tc.code)
 			require.Equal(t, tc.success, err == nil)
 			if tc.success {
 				require.NoError(t, err)

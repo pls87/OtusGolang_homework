@@ -11,29 +11,29 @@ var (
 )
 
 const (
-	zeroCode   int32 = 48
-	escapeCode int32 = 92
+	zeroCode   rune = 48
+	escapeCode rune = 92
 )
 
-func multiplyRune(b *strings.Builder, code int32, count int32) {
+func writeRunes2Builder(b *strings.Builder, code rune, count int32) {
 	var i int32
 	for i = 0; i < count; i++ {
 		b.WriteRune(code)
 	}
 }
 
-func isRuneInteger(code int32) bool {
+func isRuneInteger(code rune) bool {
 	return code >= zeroCode && code <= zeroCode+9
 }
 
-func runeDigitToInt32(code int32) (int32, error) {
+func runeDigit2Int32(code rune) (int32, error) {
 	if !isRuneInteger(code) {
 		return -1, ErrRuneIsNotADigit
 	}
 	return code - zeroCode, nil
 }
 
-func isRuneEscape(code int32) bool {
+func isRuneEscape(code rune) bool {
 	return code == escapeCode
 }
 
@@ -41,7 +41,7 @@ func Unpack(str string) (string, error) {
 	builder := strings.Builder{}
 
 	escaped := false
-	var current int32 = -1
+	var current rune = -1
 
 	for _, code := range str {
 		switch {
@@ -51,8 +51,8 @@ func Unpack(str string) (string, error) {
 			if current == -1 {
 				return "", ErrInvalidString
 			}
-			digit, _ := runeDigitToInt32(code)
-			multiplyRune(&builder, current, digit)
+			digit, _ := runeDigit2Int32(code)
+			writeRunes2Builder(&builder, current, digit)
 			current = -1
 		default:
 			if current != -1 {
