@@ -34,11 +34,11 @@ func generateRandomCase(negative bool) (input string, expected string) {
 	for i = 0; i < length; i++ {
 		code := rand.Int31n(math.MaxInt8)
 		count := randDigit()
-		writeNeg := false
+		negStep := false
 		// if it's asked to generate negative case then extra digit will be written 50% of cases
 		if negative && ((!writtenNeg && i == length-1) || randBool()) {
 			inputBuilder.WriteRune(randDigit() + zeroCode)
-			writeNeg = true
+			negStep = true
 			writtenNeg = true
 		}
 		// digit and backslash should be escaped
@@ -48,7 +48,7 @@ func generateRandomCase(negative bool) (input string, expected string) {
 		inputBuilder.WriteRune(code)
 
 		// digit must be written if count != 1 or if wrong sequence is generated on this step. Unless digit is optional
-		if count != 1 || writeNeg || randBool() {
+		if count != 1 || negStep || randBool() {
 			inputBuilder.WriteRune(count + zeroCode)
 		}
 		// expected value is generated just for positive case
