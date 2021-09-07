@@ -7,23 +7,43 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 )
 
 func seedRandom() {
-	rand.Seed(42)
+	rand.Seed(time.Now().Unix())
+}
+
+func generateRandomPositiveCase() (input string, expected string) {
+	seedRandom()
+
+	var i int32
+	inputBuilder, expectedBuilder := strings.Builder{}, strings.Builder{}
+	for i = 0; i < rand.Int31n(64); i++ {
+		code := rand.Int31n(math.MaxInt8-58) + 58
+		count := rand.Int31n(10)
+		codeCount := count + 48
+		inputBuilder.WriteRune(code)
+		inputBuilder.WriteRune(codeCount)
+		var j int32
+		for j = 0; j < count; j++ {
+			expectedBuilder.WriteRune(code)
+		}
+	}
+	return inputBuilder.String(), expectedBuilder.String()
 }
 
 func TestWriteRunes2Builder(t *testing.T) {
 	cases := []struct {
-		code           rune
-		count          int32
-		expectedResult string
+		code     rune
+		count    int32
+		expected string
 	}{
-		{code: 65, count: 5, expectedResult: "AAAAA"},
-		{code: 73, count: 9, expectedResult: "IIIIIIIII"},
-		{code: 70, count: 0, expectedResult: ""},
+		{code: 65, count: 5, expected: "AAAAA"},
+		{code: 73, count: 9, expected: "IIIIIIIII"},
+		{code: 70, count: 0, expected: ""},
 	}
 
 	for _, tc := range cases {
@@ -31,7 +51,7 @@ func TestWriteRunes2Builder(t *testing.T) {
 		t.Run(strconv.QuoteRune(tc.code), func(t *testing.T) {
 			builder := strings.Builder{}
 			writeRunes2Builder(&builder, tc.code, tc.count)
-			require.Equal(t, tc.expectedResult, builder.String())
+			require.Equal(t, tc.expected, builder.String())
 		})
 	}
 }
@@ -40,18 +60,18 @@ func TestIsRuneEscape(t *testing.T) {
 	seedRandom()
 
 	cases := []struct {
-		code           rune
-		expectedResult bool
+		code     rune
+		expected bool
 	}{
-		{code: 92, expectedResult: true},
-		{code: rand.Int31n(92), expectedResult: false},
-		{code: rand.Int31n(math.MaxInt32-93) + 93, expectedResult: false},
+		{code: 92, expected: true},
+		{code: rand.Int31n(92), expected: false},
+		{code: rand.Int31n(math.MaxInt8-93) + 93, expected: false},
 	}
 
 	for _, tc := range cases {
 		tc := tc
 		t.Run(strconv.QuoteRune(tc.code), func(t *testing.T) {
-			require.Equal(t, tc.expectedResult, isRuneEscape(tc.code))
+			require.Equal(t, tc.expected, isRuneEscape(tc.code))
 		})
 	}
 }
@@ -60,17 +80,17 @@ func TestRuneDigit2Int32(t *testing.T) {
 	seedRandom()
 
 	cases := []struct {
-		code           rune
-		expectedResult int32
-		success        bool
+		code     rune
+		expected int32
+		success  bool
 	}{
-		{code: 48, expectedResult: 0, success: true},
-		{code: 57, expectedResult: 9, success: true},
-		{code: 55, expectedResult: 7, success: true},
-		{code: 47, expectedResult: -1, success: false},
-		{code: 58, expectedResult: -1, success: false},
-		{code: rand.Int31n(48), expectedResult: -1, success: false},
-		{code: rand.Int31n(math.MaxInt32-58) + 58, expectedResult: -1, success: false},
+		{code: 48, expected: 0, success: true},
+		{code: 57, expected: 9, success: true},
+		{code: 55, expected: 7, success: true},
+		{code: 47, expected: -1, success: false},
+		{code: 58, expected: -1, success: false},
+		{code: rand.Int31n(48), expected: -1, success: false},
+		{code: rand.Int31n(math.MaxInt8-58) + 58, expected: -1, success: false},
 	}
 
 	for _, tc := range cases {
@@ -80,7 +100,7 @@ func TestRuneDigit2Int32(t *testing.T) {
 			require.Equal(t, tc.success, err == nil)
 			if tc.success {
 				require.NoError(t, err)
-				require.Equal(t, tc.expectedResult, result)
+				require.Equal(t, tc.expected, result)
 			} else {
 				require.Truef(t, errors.Is(err, ErrRuneIsNotADigit), "actual error %q", err)
 			}
@@ -89,6 +109,7 @@ func TestRuneDigit2Int32(t *testing.T) {
 }
 
 func TestUnpack(t *testing.T) {
+	randomInput, randomExpected := generateRandomPositiveCase()
 	tests := []struct {
 		input    string
 		expected string
@@ -101,6 +122,7 @@ func TestUnpack(t *testing.T) {
 		{input: "aaa0b", expected: "aab"},
 		{input: "d\n5abc", expected: "d\n\n\n\n\nabc"},
 		{input: " 5 6", expected: "           "},
+		{input: randomInput, expected: randomExpected},
 		// cases with escape
 		{input: `qwe\4\5`, expected: `qwe45`},
 		{input: `qwe\45`, expected: `qwe44444`},
