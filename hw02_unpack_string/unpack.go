@@ -41,33 +41,33 @@ func Unpack(str string) (string, error) {
 	builder := strings.Builder{}
 
 	escaped := false
-	var current rune = -1
+	var prev rune = -1
 
 	for _, code := range str {
 		switch {
 		case !escaped && isRuneEscape(code):
 			escaped = true
 		case !escaped && isRuneInteger(code):
-			if current == -1 {
+			if prev == -1 {
 				return "", ErrInvalidString
 			}
 			digit, _ := runeDigit2Int32(code)
-			writeRunes2Builder(&builder, current, digit)
-			current = -1
+			writeRunes2Builder(&builder, prev, digit)
+			prev = -1
 		default:
-			if current != -1 {
-				builder.WriteRune(current)
+			if prev != -1 {
+				builder.WriteRune(prev)
 			}
-			current = code
+			prev = code
 			escaped = false
 		}
 	}
 	// the last character if string isn't ended by digit or backslash
-	if current != -1 && !escaped {
-		builder.WriteRune(current)
+	if prev != -1 && !escaped {
+		builder.WriteRune(prev)
 	}
 	// the last character is backslash
-	if current == -1 && escaped {
+	if prev == -1 && escaped {
 		return "", ErrInvalidString
 	}
 

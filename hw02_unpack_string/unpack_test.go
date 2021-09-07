@@ -58,6 +58,7 @@ func TestIsRuneEscape(t *testing.T) {
 
 func TestRuneDigit2Int32(t *testing.T) {
 	seedRandom()
+
 	cases := []struct {
 		code           rune
 		expectedResult int32
@@ -96,6 +97,7 @@ func TestUnpack(t *testing.T) {
 		{input: "abccd", expected: "abccd"},
 		{input: "", expected: ""},
 		{input: "aaa0b", expected: "aab"},
+		{input: "d\n5abc", expected: "d\n\n\n\n\nabc"},
 		// uncomment if task with asterisk completed
 		{input: `qwe\4\5`, expected: `qwe45`},
 		{input: `qwe\45`, expected: `qwe44444`},
