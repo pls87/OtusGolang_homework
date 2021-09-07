@@ -62,13 +62,14 @@ func Unpack(str string) (string, error) {
 			escaped = false
 		}
 	}
-	// the last character if string isn't ended by digit or backslash
-	if prev != -1 && !escaped {
-		builder.WriteRune(prev)
-	}
 	// the last character is backslash
 	if prev == -1 && escaped {
 		return "", ErrInvalidString
+	}
+
+	// the last character if string isn't ended by digit or backslash
+	if prev != -1 && !escaped {
+		builder.WriteRune(prev)
 	}
 
 	return builder.String(), nil
