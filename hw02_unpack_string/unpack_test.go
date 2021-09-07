@@ -16,20 +16,44 @@ func seedRandom() {
 	rand.Seed(time.Now().Unix())
 }
 
-func generateRandomPositiveCase() (input string, expected string) {
+func randBool() bool {
+	return rand.Int31n(2) == 1
+}
+
+func randDigit() int32 {
+	return rand.Int31n(10)
+}
+
+func generateRandomCase(negative bool) (input string, expected string) {
 	seedRandom()
 
 	var i int32
 	inputBuilder, expectedBuilder := strings.Builder{}, strings.Builder{}
-	for i = 0; i < rand.Int31n(64); i++ {
-		code := rand.Int31n(math.MaxInt8-58) + 58
-		count := rand.Int31n(10)
-		codeCount := count + 48
+	length := rand.Int31n(32) + 1
+	writtenNeg := false
+	for i = 0; i < length; i++ {
+		code := rand.Int31n(math.MaxInt8)
+		count := randDigit()
+		writeNeg := false
+		// if it's asked to generate negative case then extra digit will be written 50% of cases
+		if negative && ((!writtenNeg && i == length-1) || randBool()) {
+			inputBuilder.WriteRune(randDigit() + zeroCode)
+			writeNeg = true
+			writtenNeg = true
+		}
+		// digit and backslash should be escaped
+		if isRuneEscape(code) || isRuneInteger(code) {
+			inputBuilder.WriteRune(escapeCode)
+		}
 		inputBuilder.WriteRune(code)
-		inputBuilder.WriteRune(codeCount)
-		var j int32
-		for j = 0; j < count; j++ {
-			expectedBuilder.WriteRune(code)
+
+		// digit must be written if count != 1 or if wrong sequence is generated on this step. Unless digit is optional
+		if count != 1 || writeNeg || randBool() {
+			inputBuilder.WriteRune(count + zeroCode)
+		}
+		// expected value is generated just for positive case
+		if !negative {
+			writeRunes2Builder(&expectedBuilder, code, count)
 		}
 	}
 	return inputBuilder.String(), expectedBuilder.String()
@@ -109,7 +133,7 @@ func TestRuneDigit2Int32(t *testing.T) {
 }
 
 func TestUnpack(t *testing.T) {
-	randomInput, randomExpected := generateRandomPositiveCase()
+	randomInput, randomExpected := generateRandomCase(false)
 	tests := []struct {
 		input    string
 		expected string
@@ -147,7 +171,8 @@ func TestUnpack(t *testing.T) {
 }
 
 func TestUnpackInvalidString(t *testing.T) {
-	invalidStrings := []string{`3abc`, `45`, `aaa10b`, `7`, `\`, `ab5\`, `ab\\45`}
+	randomInput, _ := generateRandomCase(true)
+	invalidStrings := []string{`3abc`, `45`, `aaa10b`, `7`, `\`, `ab5\`, `ab\\45`, randomInput}
 	for _, tc := range invalidStrings {
 		tc := tc
 		t.Run(tc, func(t *testing.T) {
