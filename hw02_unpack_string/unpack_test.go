@@ -1,19 +1,29 @@
-package hw02unpackstring
+package hw02unpackstring_test
 
 import (
 	"errors"
-	"math"
+	"fmt"
 	"math/rand"
-	"strconv"
 	"strings"
 	"testing"
 	"time"
+	"unicode"
+
+	hw02unpackstring "github.com/pls87/OtusGolang_homework/hw02_unpack_string"
 
 	"github.com/stretchr/testify/require"
 )
 
-func seedRandom() {
-	rand.Seed(time.Now().Unix())
+const (
+	zeroCode   = 48
+	escapeCode = 92
+)
+
+func seedRandom() int64 {
+	seed := time.Now().Unix()
+	rand.Seed(seed)
+
+	return seed
 }
 
 func randBool() bool {
@@ -24,119 +34,52 @@ func randDigit() int32 {
 	return rand.Int31n(10)
 }
 
-func generateRandomCase(negative bool) (input string, expected string) {
-	seedRandom()
+func generateRandomCase(negative bool) (input string, expected string, seedUsed int64) {
+	seedUsed = seedRandom()
 
 	var i int32
 	inputBuilder, expectedBuilder := strings.Builder{}, strings.Builder{}
-	length := rand.Int31n(32) + 1
-	writtenNeg := false
+	length := rand.Int31n(16) + 1
+	alreadyNegative := false
 	for i = 0; i < length; i++ {
-		code := rand.Int31n(math.MaxInt8)
+		code := rand.Int31n(255)
 		count := randDigit()
-		negStep := false
+		negativeStep := false
 		// if it's asked to generate negative case then extra digit will be written 50% of cases
-		if negative && ((!writtenNeg && i == length-1) || randBool()) {
+		if negative && ((!alreadyNegative && i == length-1) || randBool()) {
 			inputBuilder.WriteRune(randDigit() + zeroCode)
-			negStep = true
-			writtenNeg = true
+			negativeStep = true
+			alreadyNegative = true
 		}
 		// digit and backslash should be escaped
-		if isRuneEscape(code) || isRuneInteger(code) {
+		if code == escapeCode || unicode.IsDigit(code) {
 			inputBuilder.WriteRune(escapeCode)
 		}
 		inputBuilder.WriteRune(code)
 
-		// digit must be written if count != 1 or if wrong sequence is generated on this step. Unless digit is optional
-		if count != 1 || negStep || randBool() {
+		// digit is written if count != 1 or if wrong sequence is generated on this step. Otherwise, digit is optional
+		if count != 1 || negativeStep || randBool() {
 			inputBuilder.WriteRune(count + zeroCode)
 		}
 		// expected value is generated just for positive case
 		if !negative {
-			writeRunes2Builder(&expectedBuilder, code, count)
+			var i int32
+			for i = 0; i < count; i++ {
+				expectedBuilder.WriteRune(code)
+			}
 		}
 	}
-	return inputBuilder.String(), expectedBuilder.String()
-}
-
-func TestWriteRunes2Builder(t *testing.T) {
-	cases := []struct {
-		code     rune
-		count    int32
-		expected string
-	}{
-		{code: 65, count: 5, expected: "AAAAA"},
-		{code: 73, count: 9, expected: "IIIIIIIII"},
-		{code: 70, count: 0, expected: ""},
-	}
-
-	for _, tc := range cases {
-		tc := tc
-		t.Run(strconv.QuoteRune(tc.code), func(t *testing.T) {
-			builder := strings.Builder{}
-			writeRunes2Builder(&builder, tc.code, tc.count)
-			require.Equal(t, tc.expected, builder.String())
-		})
-	}
-}
-
-func TestIsRuneEscape(t *testing.T) {
-	seedRandom()
-
-	cases := []struct {
-		code     rune
-		expected bool
-	}{
-		{code: 92, expected: true},
-		{code: rand.Int31n(92), expected: false},
-		{code: rand.Int31n(math.MaxInt8-93) + 93, expected: false},
-	}
-
-	for _, tc := range cases {
-		tc := tc
-		t.Run(strconv.QuoteRune(tc.code), func(t *testing.T) {
-			require.Equal(t, tc.expected, isRuneEscape(tc.code))
-		})
-	}
-}
-
-func TestRuneDigit2Int32(t *testing.T) {
-	seedRandom()
-
-	cases := []struct {
-		code     rune
-		expected int32
-		success  bool
-	}{
-		{code: 48, expected: 0, success: true},
-		{code: 57, expected: 9, success: true},
-		{code: 55, expected: 7, success: true},
-		{code: 47, expected: -1, success: false},
-		{code: 58, expected: -1, success: false},
-		{code: rand.Int31n(48), expected: -1, success: false},
-		{code: rand.Int31n(math.MaxInt8-58) + 58, expected: -1, success: false},
-	}
-
-	for _, tc := range cases {
-		tc := tc
-		t.Run(strconv.QuoteRune(tc.code), func(t *testing.T) {
-			result, err := runeDigit2Int32(tc.code)
-			require.Equal(t, tc.success, err == nil)
-			if tc.success {
-				require.NoError(t, err)
-				require.Equal(t, tc.expected, result)
-			} else {
-				require.Truef(t, errors.Is(err, ErrRuneIsNotADigit), "actual error %q", err)
-			}
-		})
-	}
+	res := inputBuilder.String()
+	println(res)
+	return inputBuilder.String(), expectedBuilder.String(), seedUsed
 }
 
 func TestUnpack(t *testing.T) {
-	randomInput, randomExpected := generateRandomCase(false)
+	randomInput, randomExpected, seed := generateRandomCase(false)
 	tests := []struct {
 		input    string
 		expected string
+		name     string
 	}{
 		// positive cases
 		{input: "Hh0el2oo0, goo0langg0!3", expected: "Hello, golang!!!"},
@@ -146,7 +89,11 @@ func TestUnpack(t *testing.T) {
 		{input: "aaa0b", expected: "aab"},
 		{input: "d\n5abc", expected: "d\n\n\n\n\nabc"},
 		{input: " 5 6", expected: "           "},
-		{input: randomInput, expected: randomExpected},
+		{
+			input:    randomInput,
+			expected: randomExpected,
+			name:     fmt.Sprintf("Random positive case with input:%s and seed:%d", randomInput, seed),
+		},
 		// cases with escape
 		{input: `qwe\4\5`, expected: `qwe45`},
 		{input: `qwe\45`, expected: `qwe44444`},
@@ -162,8 +109,11 @@ func TestUnpack(t *testing.T) {
 
 	for _, tc := range tests {
 		tc := tc
-		t.Run(tc.input, func(t *testing.T) {
-			result, err := Unpack(tc.input)
+		if tc.name == "" {
+			tc.name = fmt.Sprintf("Positive case with input:%s", tc.input)
+		}
+		t.Run(tc.name, func(t *testing.T) {
+			result, err := hw02unpackstring.Unpack(tc.input)
 			require.NoError(t, err)
 			require.Equal(t, tc.expected, result)
 		})
@@ -171,13 +121,32 @@ func TestUnpack(t *testing.T) {
 }
 
 func TestUnpackInvalidString(t *testing.T) {
-	randomInput, _ := generateRandomCase(true)
-	invalidStrings := []string{`3abc`, `45`, `aaa10b`, `7`, `\`, `ab5\`, `ab\\45`, randomInput}
-	for _, tc := range invalidStrings {
+	randomInput, _, seed := generateRandomCase(true)
+	invalidCases := []struct {
+		input string
+		name  string
+	}{
+		{input: `3abc`},
+		{input: `45`},
+		{input: `aaa10b`},
+		{input: `7`},
+		{input: `\`},
+		{input: `ab5\`},
+		{input: `ab\\45`},
+		{
+			input: `ab\\45`,
+			name:  fmt.Sprintf("Random negative case with input:%s and seed:%d", randomInput, seed),
+		},
+	}
+
+	for _, tc := range invalidCases {
 		tc := tc
-		t.Run(tc, func(t *testing.T) {
-			_, err := Unpack(tc)
-			require.Truef(t, errors.Is(err, ErrInvalidString), "actual error %q", err)
+		if tc.name == "" {
+			tc.name = fmt.Sprintf("Negative case with input:%s", tc.input)
+		}
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := hw02unpackstring.Unpack(tc.input)
+			require.Truef(t, errors.Is(err, hw02unpackstring.ErrInvalidString), "actual error %q", err)
 		})
 	}
 }

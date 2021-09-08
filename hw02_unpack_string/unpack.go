@@ -3,6 +3,7 @@ package hw02unpackstring
 import (
 	"errors"
 	"strings"
+	"unicode"
 )
 
 var (
@@ -22,19 +23,11 @@ func writeRunes2Builder(b *strings.Builder, code rune, count int32) {
 	}
 }
 
-func isRuneInteger(code rune) bool {
-	return code >= zeroCode && code <= zeroCode+9
-}
-
 func runeDigit2Int32(code rune) (int32, error) {
-	if !isRuneInteger(code) {
+	if !unicode.IsDigit(code) {
 		return -1, ErrRuneIsNotADigit
 	}
 	return code - zeroCode, nil
-}
-
-func isRuneEscape(code rune) bool {
-	return code == escapeCode
 }
 
 func Unpack(str string) (string, error) {
@@ -45,9 +38,9 @@ func Unpack(str string) (string, error) {
 
 	for _, code := range str {
 		switch {
-		case !escaped && isRuneEscape(code):
+		case !escaped && code == escapeCode:
 			escaped = true
-		case !escaped && isRuneInteger(code):
+		case !escaped && unicode.IsDigit(code):
 			if prev == -1 {
 				return "", ErrInvalidString
 			}
