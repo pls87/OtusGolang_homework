@@ -68,8 +68,6 @@ func generateRandomCase(negative bool) (input string, expected string, seedUsed 
 			}
 		}
 	}
-	res := inputBuilder.String()
-	println(res)
 	return inputBuilder.String(), expectedBuilder.String(), seedUsed
 }
 
