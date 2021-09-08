@@ -10,7 +10,6 @@ import (
 	"unicode"
 
 	hw02unpackstring "github.com/pls87/OtusGolang_homework/hw02_unpack_string"
-
 	"github.com/stretchr/testify/require"
 )
 
