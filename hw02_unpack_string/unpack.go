@@ -6,23 +6,13 @@ import (
 	"unicode"
 )
 
-var (
-	ErrInvalidString   = errors.New("invalid string")
-	ErrRuneIsNotADigit = errors.New("rune is not a digit")
-)
+var ErrInvalidString = errors.New("invalid string")
 
 func writeRunes2Builder(b *strings.Builder, code rune, count int32) {
 	var i int32
 	for i = 0; i < count; i++ {
 		b.WriteRune(code)
 	}
-}
-
-func runeDigit2Int32(code rune) (int32, error) {
-	if !unicode.IsDigit(code) {
-		return -1, ErrRuneIsNotADigit
-	}
-	return code - '0', nil
 }
 
 func Unpack(str string) (string, error) {
@@ -39,7 +29,7 @@ func Unpack(str string) (string, error) {
 			if prev == -1 {
 				return "", ErrInvalidString
 			}
-			digit, _ := runeDigit2Int32(code)
+			digit := code - '0'
 			writeRunes2Builder(&builder, prev, digit)
 			prev = -1
 		default:
