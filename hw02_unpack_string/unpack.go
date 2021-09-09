@@ -11,11 +11,6 @@ var (
 	ErrRuneIsNotADigit = errors.New("rune is not a digit")
 )
 
-const (
-	zeroCode   rune = 48
-	escapeCode rune = 92
-)
-
 func writeRunes2Builder(b *strings.Builder, code rune, count int32) {
 	var i int32
 	for i = 0; i < count; i++ {
@@ -27,7 +22,7 @@ func runeDigit2Int32(code rune) (int32, error) {
 	if !unicode.IsDigit(code) {
 		return -1, ErrRuneIsNotADigit
 	}
-	return code - zeroCode, nil
+	return code - '0', nil
 }
 
 func Unpack(str string) (string, error) {
@@ -38,7 +33,7 @@ func Unpack(str string) (string, error) {
 
 	for _, code := range str {
 		switch {
-		case !escaped && code == escapeCode:
+		case !escaped && code == '\\':
 			escaped = true
 		case !escaped && unicode.IsDigit(code):
 			if prev == -1 {

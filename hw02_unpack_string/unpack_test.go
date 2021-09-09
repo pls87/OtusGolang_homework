@@ -13,11 +13,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const (
-	zeroCode   = 48
-	escapeCode = 92
-)
-
 func seedRandom() int64 {
 	seed := time.Now().Unix()
 	rand.Seed(seed)
@@ -46,19 +41,19 @@ func generateRandomCase(negative bool) (input string, expected string, seedUsed 
 		negativeStep := false
 		// if it's asked to generate negative case then extra digit will be written 50% of cases
 		if negative && ((!alreadyNegative && i == length-1) || randBool()) {
-			inputBuilder.WriteRune(randDigit() + zeroCode)
+			inputBuilder.WriteRune(randDigit() + '0')
 			negativeStep = true
 			alreadyNegative = true
 		}
 		// digit and backslash should be escaped
-		if code == escapeCode || unicode.IsDigit(code) {
-			inputBuilder.WriteRune(escapeCode)
+		if code == '\\' || unicode.IsDigit(code) {
+			inputBuilder.WriteRune('\\')
 		}
 		inputBuilder.WriteRune(code)
 
 		// digit is written if count != 1 or if wrong sequence is generated on this step. Otherwise, digit is optional
 		if count != 1 || negativeStep || randBool() {
-			inputBuilder.WriteRune(count + zeroCode)
+			inputBuilder.WriteRune(count + '0')
 		}
 		// expected value is generated just for positive case
 		if !negative {
