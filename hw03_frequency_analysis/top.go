@@ -64,7 +64,7 @@ func readChannel() {
 func Top10(input string) (top10 []string) {
 	input = strings.Trim(input, " ")
 	if input == "" {
-		return make([]string, 0, 0)
+		return make([]string, 0)
 	}
 
 	words := separator.Split(input, -1)
