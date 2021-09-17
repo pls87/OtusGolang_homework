@@ -1,13 +1,15 @@
-package hw03frequencyanalysis
+package hw03frequencyanalysis_test
 
 import (
 	"testing"
+
+	hw03frequencyanalysis "github.com/pls87/OtusGolang_homework/hw03_frequency_analysis"
 
 	"github.com/stretchr/testify/require"
 )
 
 // Change to true if needed.
-var taskWithAsteriskIsCompleted = false
+var taskWithAsteriskIsCompleted = true
 
 var text = `Как видите, он  спускается  по  лестнице  вслед  за  своим
 	другом   Кристофером   Робином,   головой   вниз,  пересчитывая
@@ -45,7 +47,7 @@ var text = `Как видите, он  спускается  по  лестни�
 
 func TestTop10(t *testing.T) {
 	t.Run("no words in empty string", func(t *testing.T) {
-		require.Len(t, Top10(""), 0)
+		require.Len(t, hw03frequencyanalysis.Top10(""), 0)
 	})
 
 	t.Run("positive test", func(t *testing.T) {
@@ -62,7 +64,7 @@ func TestTop10(t *testing.T) {
 				"кристофер", // 4
 				"не",        // 4
 			}
-			require.Equal(t, expected, Top10(text))
+			require.Equal(t, expected, hw03frequencyanalysis.Top10(text))
 		} else {
 			expected := []string{
 				"он",        // 8
@@ -76,7 +78,7 @@ func TestTop10(t *testing.T) {
 				"не",        // 4
 				"то",        // 4
 			}
-			require.Equal(t, expected, Top10(text))
+			require.Equal(t, expected, hw03frequencyanalysis.Top10(text))
 		}
 	})
 }

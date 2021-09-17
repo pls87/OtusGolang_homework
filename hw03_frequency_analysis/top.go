@@ -6,17 +6,16 @@ import (
 	"strings"
 )
 
-const topAmount int = 10
+const topAmount = 10
 
 var (
-	separator    = regexp.MustCompile(`\s+`)
-	wordsChannel = make(chan string)
-	frequency    = make(map[string]int)
+	wordExtractor        = regexp.MustCompile(`[\S]+[-]?[\S]+|[^\s-]`)
+	wordInsensitiveChars = regexp.MustCompile(`[!?,.*%@$^()]`)
 )
 
 type wordEntry struct {
-	word  string
 	count int
+	word  string
 }
 
 type wordEntrySorter struct {
@@ -36,52 +35,60 @@ func (s *wordEntrySorter) Less(i, j int) bool {
 	return s.by(&s.wordEntries[i], &s.wordEntries[j])
 }
 
-func countAndLexicalComparer(w1, w2 *wordEntry) bool {
+func canonicalWord(word string) (canonical string) {
+	return wordInsensitiveChars.ReplaceAllString(strings.ToLower(word), "")
+}
+
+func entriesComparer(w1, w2 *wordEntry) bool {
 	if w1.count == w2.count {
 		return w1.word < w2.word
 	}
 	return w1.count > w2.count
 }
 
-func writeWords2Channel(words []string) {
+func writeMatches2Channel(wordsChannel chan<- string, matches [][]string) {
 	defer close(wordsChannel)
 
-	for _, word := range words {
-		wordsChannel <- word
+	for _, word := range matches {
+		wordsChannel <- word[0]
 	}
 }
 
-func readChannel() {
+func readWords(wordsChannel <-chan string) map[string]int {
+	frequency := make(map[string]int)
 	for {
 		word, opened := <-wordsChannel
 		if !opened {
-			break
+			return frequency
 		}
-		frequency[word]++
+		frequency[canonicalWord(word)]++
 	}
 }
 
-func Top10(input string) (top10 []string) {
-	input = strings.Trim(input, " ")
-	if input == "" {
-		return make([]string, 0)
-	}
-
-	words := separator.Split(input, -1)
-
-	go writeWords2Channel(words)
-	readChannel()
-
+func convertHistogram2Top(histogram map[string]int) (top []string) {
 	entries := make([]wordEntry, 0, topAmount)
-	for word, count := range frequency {
-		entries = append(entries, wordEntry{word, count})
+	for word, count := range histogram {
+		entries = append(entries, wordEntry{count: count, word: word})
 	}
 
-	sort.Sort(&wordEntrySorter{entries, countAndLexicalComparer})
+	sort.Sort(&wordEntrySorter{wordEntries: entries, by: entriesComparer})
 
-	top10 = make([]string, 0, topAmount)
-	for _, value := range entries[0:topAmount] {
-		top10 = append(top10, value.word)
+	limit := topAmount
+	if len(entries) < topAmount {
+		limit = len(entries)
 	}
-	return top10
+
+	top = make([]string, 0, topAmount)
+	for _, entry := range entries[0:limit] {
+		top = append(top, entry.word)
+	}
+
+	return top
+}
+
+func Top10(input string) (top []string) {
+	wordsChannel := make(chan string)
+
+	go writeMatches2Channel(wordsChannel, wordExtractor.FindAllStringSubmatch(input, -1))
+	return convertHistogram2Top(readWords(wordsChannel))
 }
