@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	hw03frequencyanalysis "github.com/pls87/OtusGolang_homework/hw03_frequency_analysis"
-
 	"github.com/stretchr/testify/require"
 )
 
