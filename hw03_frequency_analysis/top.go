@@ -1,6 +1,7 @@
 package hw03frequencyanalysis
 
 import (
+	"bufio"
 	"regexp"
 	"sort"
 	"strings"
@@ -9,8 +10,8 @@ import (
 const topAmount = 10
 
 var (
-	wordExtractor        = regexp.MustCompile(`[\S]+[-]?[\S]+|[^\s-]`)
 	wordInsensitiveChars = regexp.MustCompile(`[!?,.*%@$^()]`)
+	stopWords            = map[string]bool{"-": true}
 )
 
 type wordEntry struct {
@@ -46,23 +47,17 @@ func entriesComparer(w1, w2 *wordEntry) bool {
 	return w1.count > w2.count
 }
 
-func writeMatches2Channel(wordsChannel chan<- string, matches [][]string) {
-	defer close(wordsChannel)
+func getWordsFrequency(input string) (frequency map[string]int) {
+	frequency = make(map[string]int)
 
-	for _, word := range matches {
-		wordsChannel <- word[0]
-	}
-}
-
-func readWords(wordsChannel <-chan string) map[string]int {
-	frequency := make(map[string]int)
-	for {
-		word, opened := <-wordsChannel
-		if !opened {
-			return frequency
+	scanner := bufio.NewScanner(strings.NewReader(input))
+	scanner.Split(bufio.ScanWords)
+	for scanner.Scan() {
+		if !stopWords[scanner.Text()] {
+			frequency[canonicalWord(scanner.Text())]++
 		}
-		frequency[canonicalWord(word)]++
 	}
+	return frequency
 }
 
 func convertHistogram2Top(histogram map[string]int) (top []string) {
@@ -87,8 +82,5 @@ func convertHistogram2Top(histogram map[string]int) (top []string) {
 }
 
 func Top10(input string) (top []string) {
-	wordsChannel := make(chan string)
-
-	go writeMatches2Channel(wordsChannel, wordExtractor.FindAllStringSubmatch(input, -1))
-	return convertHistogram2Top(readWords(wordsChannel))
+	return convertHistogram2Top(getWordsFrequency(input))
 }
