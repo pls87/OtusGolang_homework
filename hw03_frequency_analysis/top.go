@@ -9,7 +9,7 @@ import (
 const topAmount = 10
 
 var (
-	charsToTrim = "!?,.()"
+	charsToTrim = "!?,.():"
 	notWords    = map[string]bool{
 		"":  true,
 		"-": true,
