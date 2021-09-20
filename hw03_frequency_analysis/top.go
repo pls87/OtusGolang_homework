@@ -2,7 +2,6 @@ package hw03frequencyanalysis
 
 import (
 	"bufio"
-	"regexp"
 	"sort"
 	"strings"
 )
@@ -10,34 +9,16 @@ import (
 const topAmount = 10
 
 var (
-	wordInsensitiveChars = regexp.MustCompile(`[!?,.*%@$^()]`)
-	stopWords            = map[string]bool{"-": true}
+	charsToTrim = "!?,.()"
+	notWords    = map[string]bool{
+		"":  true,
+		"-": true,
+		"*": true,
+	}
 )
 
-type wordEntry struct {
-	count int
-	word  string
-}
-
-type wordEntrySorter struct {
-	wordEntries []wordEntry
-	by          func(w1, w2 *wordEntry) bool
-}
-
-func (s *wordEntrySorter) Len() int {
-	return len(s.wordEntries)
-}
-
-func (s *wordEntrySorter) Swap(i, j int) {
-	s.wordEntries[i], s.wordEntries[j] = s.wordEntries[j], s.wordEntries[i]
-}
-
-func (s *wordEntrySorter) Less(i, j int) bool {
-	return s.by(&s.wordEntries[i], &s.wordEntries[j])
-}
-
 func canonicalWord(word string) (canonical string) {
-	return wordInsensitiveChars.ReplaceAllString(strings.ToLower(word), "")
+	return strings.Trim(strings.ToLower(word), charsToTrim)
 }
 
 func entriesComparer(w1, w2 *wordEntry) bool {
@@ -53,8 +34,9 @@ func getWordsFrequency(input string) (frequency map[string]int) {
 	scanner := bufio.NewScanner(strings.NewReader(input))
 	scanner.Split(bufio.ScanWords)
 	for scanner.Scan() {
-		if !stopWords[scanner.Text()] {
-			frequency[canonicalWord(scanner.Text())]++
+		word := canonicalWord(scanner.Text())
+		if !notWords[word] {
+			frequency[word]++
 		}
 	}
 	return frequency
@@ -68,14 +50,11 @@ func convertHistogram2Top(histogram map[string]int) (top []string) {
 
 	sort.Sort(&wordEntrySorter{wordEntries: entries, by: entriesComparer})
 
-	limit := topAmount
-	if len(entries) < topAmount {
-		limit = len(entries)
-	}
-
 	top = make([]string, 0, topAmount)
-	for _, entry := range entries[0:limit] {
-		top = append(top, entry.word)
+	for i, entry := range entries {
+		if i < topAmount {
+			top = append(top, entry.word)
+		}
 	}
 
 	return top
