@@ -21,3 +21,10 @@ func (s *wordEntrySorter) Swap(i, j int) {
 func (s *wordEntrySorter) Less(i, j int) bool {
 	return s.by(&s.wordEntries[i], &s.wordEntries[j])
 }
+
+func entriesComparer(w1, w2 *wordEntry) bool {
+	if w1.count == w2.count {
+		return w1.word < w2.word
+	}
+	return w1.count > w2.count
+}
