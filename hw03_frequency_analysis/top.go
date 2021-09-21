@@ -8,6 +8,11 @@ import (
 
 const topAmount = 10
 
+type wordEntry struct {
+	count int
+	word  string
+}
+
 var (
 	charsToTrim = "!?,.():"
 	notWords    = map[string]bool{
@@ -41,7 +46,12 @@ func convertHistogram2Top(histogram map[string]int) (top []string) {
 		entries = append(entries, wordEntry{count: count, word: word})
 	}
 
-	sort.Sort(&wordEntrySorter{wordEntries: entries, by: entriesComparer})
+	sort.Slice(entries, func(i, j int) bool {
+		if entries[i].count == entries[j].count {
+			return entries[i].word < entries[j].word
+		}
+		return entries[i].count > entries[j].count
+	})
 
 	top = make([]string, 0, topAmount)
 	for i, entry := range entries {
