@@ -4,7 +4,7 @@ import (
 	"sync"
 )
 
-var mutex sync.Mutex
+var listMutex sync.Mutex
 
 type List interface {
 	Len() int
@@ -49,8 +49,8 @@ func (l list) Back() *ListItem {
 }
 
 func (l *list) PushFront(v interface{}) *ListItem {
-	mutex.Lock()
-	defer mutex.Unlock()
+	listMutex.Lock()
+	defer listMutex.Unlock()
 
 	newLi := &ListItem{Value: v, Next: l.front, Prev: nil}
 
@@ -64,8 +64,8 @@ func (l *list) PushFront(v interface{}) *ListItem {
 }
 
 func (l *list) PushBack(v interface{}) *ListItem {
-	mutex.Lock()
-	defer mutex.Unlock()
+	listMutex.Lock()
+	defer listMutex.Unlock()
 
 	newLi := &ListItem{Value: v, Next: nil, Prev: l.back}
 
@@ -79,8 +79,8 @@ func (l *list) PushBack(v interface{}) *ListItem {
 }
 
 func (l *list) Remove(li *ListItem) {
-	mutex.Lock()
-	defer mutex.Unlock()
+	listMutex.Lock()
+	defer listMutex.Unlock()
 
 	if l.removeBack(li) || l.removeFront(li) {
 		return
@@ -91,8 +91,8 @@ func (l *list) Remove(li *ListItem) {
 }
 
 func (l *list) MoveToFront(li *ListItem) {
-	mutex.Lock()
-	defer mutex.Unlock()
+	listMutex.Lock()
+	defer listMutex.Unlock()
 
 	switch {
 	case li.IsFirst():
