@@ -4,8 +4,6 @@ import (
 	"sync"
 )
 
-var listMutex sync.Mutex
-
 type List interface {
 	Len() int
 	Front() *ListItem
@@ -31,30 +29,34 @@ func (li ListItem) IsFirst() bool {
 }
 
 type list struct {
+	mu    *sync.Mutex
 	len   int
 	front *ListItem
 	back  *ListItem
 }
 
-func (l list) Len() int {
+func (l *list) Len() int {
 	return l.len
 }
 
-func (l list) Front() *ListItem {
+func (l *list) Front() *ListItem {
 	return l.front
 }
 
-func (l list) Back() *ListItem {
+func (l *list) Back() *ListItem {
 	return l.back
 }
 
 func (l *list) PushFront(v interface{}) *ListItem {
-	listMutex.Lock()
-	defer listMutex.Unlock()
+	l.mu.Lock()
+	defer l.mu.Unlock()
 
 	newLi := &ListItem{Value: v, Next: l.front, Prev: nil}
 
 	if !l.push2Empty(newLi) {
+		if l.front == nil {
+			_ = l.front
+		}
 		l.front.Prev = newLi
 		l.front = newLi
 		l.len++
@@ -64,12 +66,15 @@ func (l *list) PushFront(v interface{}) *ListItem {
 }
 
 func (l *list) PushBack(v interface{}) *ListItem {
-	listMutex.Lock()
-	defer listMutex.Unlock()
+	l.mu.Lock()
+	defer l.mu.Unlock()
 
 	newLi := &ListItem{Value: v, Next: nil, Prev: l.back}
 
 	if !l.push2Empty(newLi) {
+		if l.back == nil {
+			_ = l.back
+		}
 		l.back.Next = newLi
 		l.back = newLi
 		l.len++
@@ -79,10 +84,14 @@ func (l *list) PushBack(v interface{}) *ListItem {
 }
 
 func (l *list) Remove(li *ListItem) {
-	listMutex.Lock()
-	defer listMutex.Unlock()
+	l.mu.Lock()
+	defer l.mu.Unlock()
 
-	if l.removeBack(li) || l.removeFront(li) {
+	if l.removeBack(li) {
+		return
+	}
+
+	if l.removeFront(li) {
 		return
 	}
 
@@ -91,26 +100,45 @@ func (l *list) Remove(li *ListItem) {
 }
 
 func (l *list) MoveToFront(li *ListItem) {
-	listMutex.Lock()
-	defer listMutex.Unlock()
+	l.mu.Lock()
+	defer l.mu.Unlock()
 
 	switch {
 	case li.IsFirst():
 		return
+	case l.len == 2:
+		l.back.Prev = nil
+		l.back.Next = l.front
+		l.front.Next = nil
+		l.front.Prev = l.back
+		l.front, l.back = l.back, l.front
 	case li.IsLast():
-		l.back = l.back.Prev
+		prev := l.back.Prev
+		l.back.Prev = nil
+		l.back.Next = l.front
+		l.front.Prev = l.back
+		l.front = l.back
+		l.back = prev
 		l.back.Next = nil
 	default:
-		li.Next.Prev, li.Prev.Next = li.Prev, li.Next
+		prev, next := li.Prev, li.Next
+		li.Next.Prev = prev
+		li.Prev.Next = next
+		l.front.Prev = li
+		li.Next = l.front
+		li.Prev = nil
+		l.front = li
 	}
-
-	li.Next, li.Prev, l.front = l.front, nil, li
 }
 
 func (l *list) removeBack(li *ListItem) bool {
 	if li.IsLast() {
 		l.back = l.back.Prev
-		l.back.Next = nil
+		if l.back != nil {
+			l.back.Next = nil
+		} else {
+			l.front = nil
+		}
 		l.len--
 		return true
 	}
@@ -120,7 +148,11 @@ func (l *list) removeBack(li *ListItem) bool {
 func (l *list) removeFront(li *ListItem) bool {
 	if li.IsFirst() {
 		l.front = l.front.Next
-		l.front.Prev = nil
+		if l.front != nil {
+			l.front.Prev = nil
+		} else {
+			l.back = nil
+		}
 		l.len--
 		return true
 	}
@@ -128,7 +160,7 @@ func (l *list) removeFront(li *ListItem) bool {
 }
 
 func (l *list) push2Empty(li *ListItem) bool {
-	if l.Len() == 0 {
+	if l.len == 0 {
 		l.back, l.front = li, li
 		l.len++
 		return true
@@ -137,5 +169,5 @@ func (l *list) push2Empty(li *ListItem) bool {
 }
 
 func NewList() List {
-	return &list{len: 0, front: nil, back: nil}
+	return &list{len: 0, front: nil, back: nil, mu: &sync.Mutex{}}
 }
