@@ -74,6 +74,7 @@ var purgeTests = []Step{
 }
 
 func checkQueueEqual(t *testing.T, expected []interface{}, q List) {
+	t.Helper()
 	elems := make([]interface{}, 0, q.Len())
 	for i := q.Front(); i != nil; i = i.Next {
 		elems = append(elems, i.Value.(*cacheItem).value)
@@ -82,6 +83,7 @@ func checkQueueEqual(t *testing.T, expected []interface{}, q List) {
 }
 
 func runTests(t *testing.T, c Cache, actions []Step) {
+	t.Helper()
 	for _, tc := range actions {
 		switch tc.action {
 		case "set":
