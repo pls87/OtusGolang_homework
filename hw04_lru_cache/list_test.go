@@ -6,6 +6,31 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+type equals func(l, r interface{}) bool
+
+func checkListEQ(t *testing.T, expected []interface{}, actual List, eq equals) {
+	t.Helper()
+
+	elems := make([]interface{}, 0, actual.Len())
+	for i := actual.Front(); i != nil; i = i.Next {
+		elems = append(elems, i.Value)
+	}
+	require.Equal(t, len(expected), len(elems))
+	for i := 0; i < len(expected); i++ {
+		require.True(t, eq(expected[i], elems[i]))
+	}
+
+	elems = make([]interface{}, 0, actual.Len())
+	for i := actual.Back(); i != nil; i = i.Prev {
+		elems = append([]interface{}{i.Value}, elems...)
+	}
+
+	require.Equal(t, len(expected), len(elems))
+	for i := 0; i < len(expected); i++ {
+		require.True(t, eq(expected[i], elems[i]))
+	}
+}
+
 func TestList(t *testing.T) {
 	t.Run("empty list", func(t *testing.T) {
 		l := NewList()
@@ -43,18 +68,14 @@ func TestList(t *testing.T) {
 		l.MoveToFront(l.Back())  // [70, 80, 60, 40, 10, 30, 50]
 		l.MoveToFront(l.Back())  // [50, 70, 80, 60, 40, 10, 30]
 
-		elems := make([]int, 0, l.Len())
-		for i := l.Front(); i != nil; i = i.Next {
-			elems = append(elems, i.Value.(int))
-		}
-		require.Equal(t, []int{50, 70, 80, 60, 40, 10, 30}, elems)
+		checkListEQ(t, []interface{}{50, 70, 80, 60, 40, 10, 30}, l, func(l, r interface{}) bool {
+			return l == r
+		})
 
-		l.MoveToFront(l.Back()) // [30, 50, 70, 80, 60, 40, 10]
+		l.MoveToFront(l.Front().Next.Next.Next) // [60, 50, 70, 80, 40, 10, 30]
 
-		elems = make([]int, 0, l.Len())
-		for i := l.Front(); i != nil; i = i.Next {
-			elems = append(elems, i.Value.(int))
-		}
-		require.Equal(t, []int{30, 50, 70, 80, 60, 40, 10}, elems)
+		checkListEQ(t, []interface{}{60, 50, 70, 80, 40, 10, 30}, l, func(l, r interface{}) bool {
+			return l == r
+		})
 	})
 }

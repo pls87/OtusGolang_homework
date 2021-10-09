@@ -23,66 +23,140 @@ type Step struct {
 	expected Expected
 }
 
+var emptyTests = []Step{
+	{
+		action: "get", key: "aaa", value: nil,
+		expected: Expected{inCache: false, ok: false, len: 0, queue: []interface{}{}},
+	}, {
+		action: "get", key: "bbb", value: nil,
+		expected: Expected{inCache: false, ok: false, len: 0, queue: []interface{}{}},
+	},
+}
+
 var simpleTests = []Step{
 	{
 		action: "set", key: "aaa", value: 100,
-		expected: Expected{inCache: false, ok: true, len: 1, queue: []interface{}{100}},
+		expected: Expected{inCache: false, ok: true, len: 1, queue: []interface{}{
+			&cacheItem{"aaa", 100},
+		}},
 	}, {
 		action: "set", key: "bbb", value: 200,
-		expected: Expected{inCache: false, ok: true, len: 2, queue: []interface{}{200, 100}},
+		expected: Expected{inCache: false, ok: true, len: 2, queue: []interface{}{
+			&cacheItem{"bbb", 200},
+			&cacheItem{"aaa", 100},
+		}},
 	}, {
 		action: "get", key: "aaa", value: 100,
-		expected: Expected{inCache: true, ok: true, len: 2, queue: []interface{}{100, 200}},
+		expected: Expected{inCache: true, ok: true, len: 2, queue: []interface{}{
+			&cacheItem{"aaa", 100},
+			&cacheItem{"bbb", 200},
+		}},
 	}, {
 		action: "get", key: "bbb", value: 200,
-		expected: Expected{inCache: true, ok: true, len: 2, queue: []interface{}{200, 100}},
+		expected: Expected{inCache: true, ok: true, len: 2, queue: []interface{}{
+			&cacheItem{"bbb", 200},
+			&cacheItem{"aaa", 100},
+		}},
 	}, {
 		action: "set", key: "aaa", value: 300,
-		expected: Expected{inCache: true, ok: true, len: 2, queue: []interface{}{300, 200}},
+		expected: Expected{inCache: true, ok: true, len: 2, queue: []interface{}{
+			&cacheItem{"aaa", 300},
+			&cacheItem{"bbb", 200},
+		}},
 	}, {
 		action: "get", key: "aaa", value: 300,
-		expected: Expected{inCache: true, ok: true, len: 2, queue: []interface{}{300, 200}},
+		expected: Expected{inCache: true, ok: true, len: 2, queue: []interface{}{
+			&cacheItem{"aaa", 300},
+			&cacheItem{"bbb", 200},
+		}},
 	}, {
 		action: "get", key: "ccc", value: nil,
-		expected: Expected{inCache: false, ok: false, len: 2, queue: []interface{}{300, 200}},
+		expected: Expected{inCache: false, ok: false, len: 2, queue: []interface{}{
+			&cacheItem{"aaa", 300},
+			&cacheItem{"bbb", 200},
+		}},
 	},
 }
 
 var purgeTests = []Step{
 	{
 		action: "set", key: "aaa", value: 100,
-		expected: Expected{inCache: false, ok: true, len: 1, queue: []interface{}{100}},
+		expected: Expected{inCache: false, ok: true, len: 1, queue: []interface{}{
+			&cacheItem{"aaa", 100},
+		}},
 	}, {
 		action: "set", key: "bbb", value: 200,
-		expected: Expected{inCache: false, ok: true, len: 2, queue: []interface{}{200, 100}},
+		expected: Expected{inCache: false, ok: true, len: 2, queue: []interface{}{
+			&cacheItem{"bbb", 200},
+			&cacheItem{"aaa", 100},
+		}},
 	}, {
 		action: "set", key: "ccc", value: 300,
-		expected: Expected{inCache: false, ok: true, len: 3, queue: []interface{}{300, 200, 100}},
+		expected: Expected{inCache: false, ok: true, len: 3, queue: []interface{}{
+			&cacheItem{"ccc", 300},
+			&cacheItem{"bbb", 200},
+			&cacheItem{"aaa", 100},
+		}},
+	}, {
+		action: "set", key: "eee", value: 800,
+		expected: Expected{inCache: false, ok: true, len: 4, queue: []interface{}{
+			&cacheItem{"eee", 800},
+			&cacheItem{"ccc", 300},
+			&cacheItem{"bbb", 200},
+			&cacheItem{"aaa", 100},
+		}},
 	}, {
 		action: "get", key: "bbb", value: 200,
-		expected: Expected{inCache: true, ok: true, len: 3, queue: []interface{}{200, 300, 100}},
+		expected: Expected{inCache: true, ok: true, len: 4, queue: []interface{}{
+			&cacheItem{"bbb", 200},
+			&cacheItem{"eee", 800},
+			&cacheItem{"ccc", 300},
+			&cacheItem{"aaa", 100},
+		}},
 	}, {
 		action: "set", key: "ddd", value: 400,
-		expected: Expected{inCache: false, ok: true, len: 3, queue: []interface{}{400, 200, 300}},
+		expected: Expected{inCache: false, ok: true, len: 4, queue: []interface{}{
+			&cacheItem{"ddd", 400},
+			&cacheItem{"bbb", 200},
+			&cacheItem{"eee", 800},
+			&cacheItem{"ccc", 300},
+		}},
 	}, {
 		action: "get", key: "aaa", value: nil,
-		expected: Expected{inCache: false, ok: false, len: 3, queue: []interface{}{400, 200, 300}},
+		expected: Expected{inCache: false, ok: false, len: 4, queue: []interface{}{
+			&cacheItem{"ddd", 400},
+			&cacheItem{"bbb", 200},
+			&cacheItem{"eee", 800},
+			&cacheItem{"ccc", 300},
+		}},
 	}, {
 		action: "set", key: "ccc", value: 500,
-		expected: Expected{inCache: true, ok: true, len: 3, queue: []interface{}{500, 400, 200}},
+		expected: Expected{inCache: true, ok: true, len: 4, queue: []interface{}{
+			&cacheItem{"ccc", 500},
+			&cacheItem{"ddd", 400},
+			&cacheItem{"bbb", 200},
+			&cacheItem{"eee", 800},
+		}},
+	}, {
+		action: "get", key: "bbb", value: 200,
+		expected: Expected{inCache: true, ok: true, len: 4, queue: []interface{}{
+			&cacheItem{"bbb", 200},
+			&cacheItem{"ccc", 500},
+			&cacheItem{"ddd", 400},
+			&cacheItem{"eee", 800},
+		}},
+	}, {
+		action: "set", key: "fff", value: 200,
+		expected: Expected{inCache: false, ok: true, len: 4, queue: []interface{}{
+			&cacheItem{"fff", 200},
+			&cacheItem{"bbb", 200},
+			&cacheItem{"ccc", 500},
+			&cacheItem{"ddd", 400},
+		}},
 	},
 }
 
-func checkQueueEqual(t *testing.T, expected []interface{}, q List) {
-	t.Helper()
-	elems := make([]interface{}, 0, q.Len())
-	for i := q.Front(); i != nil; i = i.Next {
-		elems = append(elems, i.Value.(*cacheItem).value)
-	}
-	require.Equal(t, expected, elems)
-}
-
-func runTests(t *testing.T, c Cache, actions []Step) {
+func runSteps(t *testing.T, c Cache, actions []Step) {
 	t.Helper()
 	for _, tc := range actions {
 		switch tc.action {
@@ -94,27 +168,23 @@ func runTests(t *testing.T, c Cache, actions []Step) {
 			require.Equal(t, tc.value, val)
 		}
 		require.Equal(t, tc.expected.len, c.(*lruCache).queue.Len())
-		checkQueueEqual(t, tc.expected.queue, c.(*lruCache).queue)
+		checkListEQ(t, tc.expected.queue, c.(*lruCache).queue, func(l, r interface{}) bool {
+			return l.(*cacheItem).value == r.(*cacheItem).value && l.(*cacheItem).key == r.(*cacheItem).key
+		})
 	}
 }
 
 func TestCache(t *testing.T) {
 	t.Run("empty cache", func(t *testing.T) {
-		c := NewCache(10)
-
-		_, ok := c.Get("aaa")
-		require.False(t, ok)
-
-		_, ok = c.Get("bbb")
-		require.False(t, ok)
+		runSteps(t, NewCache(10), emptyTests)
 	})
 
 	t.Run("simple", func(t *testing.T) {
-		runTests(t, NewCache(5), simpleTests)
+		runSteps(t, NewCache(5), simpleTests)
 	})
 
 	t.Run("purge logic", func(t *testing.T) {
-		runTests(t, NewCache(3), purgeTests)
+		runSteps(t, NewCache(4), purgeTests)
 	})
 }
 

@@ -97,13 +97,11 @@ func (l *list) MoveToFront(li *ListItem) {
 		return
 	}
 
-	prev, next := li.Prev, li.Next
-
 	if li.IsLast() {
-		l.back = prev
+		l.back = li.Prev
 		l.back.Next = nil
 	} else {
-		li.Next.Prev, li.Prev.Next = prev, next
+		li.Next.Prev, li.Prev.Next = li.Prev, li.Next
 	}
 
 	li.Prev, li.Next, l.front.Prev = nil, l.front, li
