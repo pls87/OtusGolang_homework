@@ -54,9 +54,6 @@ func (l *list) PushFront(v interface{}) *ListItem {
 	newLi := &ListItem{Value: v, Next: l.front, Prev: nil}
 
 	if !l.push2Empty(newLi) {
-		if l.front == nil {
-			_ = l.front
-		}
 		l.front.Prev = newLi
 		l.front = newLi
 		l.len++
@@ -72,9 +69,6 @@ func (l *list) PushBack(v interface{}) *ListItem {
 	newLi := &ListItem{Value: v, Next: nil, Prev: l.back}
 
 	if !l.push2Empty(newLi) {
-		if l.back == nil {
-			_ = l.back
-		}
 		l.back.Next = newLi
 		l.back = newLi
 		l.len++
@@ -87,11 +81,7 @@ func (l *list) Remove(li *ListItem) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
-	if l.removeBack(li) {
-		return
-	}
-
-	if l.removeFront(li) {
+	if l.removeBack(li) || l.removeFront(li) {
 		return
 	}
 
@@ -103,32 +93,21 @@ func (l *list) MoveToFront(li *ListItem) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
-	switch {
-	case li.IsFirst():
+	if li.IsFirst() {
 		return
-	case l.len == 2:
-		l.back.Prev = nil
-		l.back.Next = l.front
-		l.front.Next = nil
-		l.front.Prev = l.back
-		l.front, l.back = l.back, l.front
-	case li.IsLast():
-		prev := l.back.Prev
-		l.back.Prev = nil
-		l.back.Next = l.front
-		l.front.Prev = l.back
-		l.front = l.back
+	}
+
+	prev, next := li.Prev, li.Next
+
+	if li.IsLast() {
 		l.back = prev
 		l.back.Next = nil
-	default:
-		prev, next := li.Prev, li.Next
-		li.Next.Prev = prev
-		li.Prev.Next = next
-		l.front.Prev = li
-		li.Next = l.front
-		li.Prev = nil
-		l.front = li
+	} else {
+		li.Next.Prev, li.Prev.Next = prev, next
 	}
+
+	li.Prev, li.Next, l.front.Prev = nil, l.front, li
+	l.front = li
 }
 
 func (l *list) removeBack(li *ListItem) bool {
