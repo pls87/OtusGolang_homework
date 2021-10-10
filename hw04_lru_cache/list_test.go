@@ -54,6 +54,8 @@ func TestList(t *testing.T) {
 			}
 		} // [80, 60, 40, 10, 30, 50, 70]
 
+		checkListEQ(t, []interface{}{80, 60, 40, 10, 30, 50, 70}, l)
+
 		require.Equal(t, 7, l.Len())
 		require.Equal(t, 80, l.Front().Value)
 		require.Equal(t, 70, l.Back().Value)
@@ -67,5 +69,20 @@ func TestList(t *testing.T) {
 		l.MoveToFront(l.Front().Next.Next.Next) // [60, 50, 70, 80, 40, 10, 30]
 
 		checkListEQ(t, []interface{}{60, 50, 70, 80, 40, 10, 30}, l)
+
+		l.Remove(l.Front().Next.Next)
+		checkListEQ(t, []interface{}{60, 50, 80, 40, 10, 30}, l)
+
+		for l.Len() != 0 {
+			if l.Len()%2 == 0 {
+				l.Remove(l.Front())
+			} else {
+				l.Remove(l.Back())
+			}
+		}
+
+		require.Equal(t, 0, l.Len())
+		require.Nil(t, l.Front())
+		require.Nil(t, l.Back())
 	})
 }

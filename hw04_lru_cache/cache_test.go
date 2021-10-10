@@ -153,6 +153,9 @@ var purgeTests = []Step{
 			&cacheItem{"ccc", 500},
 			&cacheItem{"ddd", 400},
 		}},
+	}, {
+		action: "clear", key: "", value: nil,
+		expected: Expected{inCache: false, ok: true, len: 0, queue: []interface{}{}},
 	},
 }
 
@@ -166,6 +169,8 @@ func runSteps(t *testing.T, c Cache, actions []Step) {
 			val, ok := c.Get(tc.key)
 			require.Equal(t, tc.expected.ok, ok)
 			require.Equal(t, tc.value, val)
+		case "clear":
+			c.Clear()
 		}
 		require.Equal(t, tc.expected.len, c.(*lruCache).queue.Len())
 		checkListEQ(t, tc.expected.queue, c.(*lruCache).queue)
