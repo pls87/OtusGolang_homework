@@ -6,9 +6,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-type equals func(l, r interface{}) bool
-
-func checkListEQ(t *testing.T, expected []interface{}, actual List, eq equals) {
+func checkListEQ(t *testing.T, expected []interface{}, actual List) {
 	t.Helper()
 
 	elems := make([]interface{}, 0, actual.Len())
@@ -16,9 +14,7 @@ func checkListEQ(t *testing.T, expected []interface{}, actual List, eq equals) {
 		elems = append(elems, i.Value)
 	}
 	require.Equal(t, len(expected), len(elems))
-	for i := 0; i < len(expected); i++ {
-		require.True(t, eq(expected[i], elems[i]))
-	}
+	require.Equal(t, expected, elems)
 
 	elems = make([]interface{}, 0, actual.Len())
 	for i := actual.Back(); i != nil; i = i.Prev {
@@ -26,9 +22,7 @@ func checkListEQ(t *testing.T, expected []interface{}, actual List, eq equals) {
 	}
 
 	require.Equal(t, len(expected), len(elems))
-	for i := 0; i < len(expected); i++ {
-		require.True(t, eq(expected[i], elems[i]))
-	}
+	require.Equal(t, expected, elems)
 }
 
 func TestList(t *testing.T) {
@@ -68,14 +62,10 @@ func TestList(t *testing.T) {
 		l.MoveToFront(l.Back())  // [70, 80, 60, 40, 10, 30, 50]
 		l.MoveToFront(l.Back())  // [50, 70, 80, 60, 40, 10, 30]
 
-		checkListEQ(t, []interface{}{50, 70, 80, 60, 40, 10, 30}, l, func(l, r interface{}) bool {
-			return l == r
-		})
+		checkListEQ(t, []interface{}{50, 70, 80, 60, 40, 10, 30}, l)
 
 		l.MoveToFront(l.Front().Next.Next.Next) // [60, 50, 70, 80, 40, 10, 30]
 
-		checkListEQ(t, []interface{}{60, 50, 70, 80, 40, 10, 30}, l, func(l, r interface{}) bool {
-			return l == r
-		})
+		checkListEQ(t, []interface{}{60, 50, 70, 80, 40, 10, 30}, l)
 	})
 }

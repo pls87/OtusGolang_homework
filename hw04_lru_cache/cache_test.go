@@ -168,9 +168,7 @@ func runSteps(t *testing.T, c Cache, actions []Step) {
 			require.Equal(t, tc.value, val)
 		}
 		require.Equal(t, tc.expected.len, c.(*lruCache).queue.Len())
-		checkListEQ(t, tc.expected.queue, c.(*lruCache).queue, func(l, r interface{}) bool {
-			return l.(*cacheItem).value == r.(*cacheItem).value && l.(*cacheItem).key == r.(*cacheItem).key
-		})
+		checkListEQ(t, tc.expected.queue, c.(*lruCache).queue)
 	}
 }
 
