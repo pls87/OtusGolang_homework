@@ -8,43 +8,39 @@ import (
 
 var ErrErrorsLimitExceeded = errors.New("errors limit exceeded")
 
-var wg = sync.WaitGroup{}
-
 type Task func() error
 
 // Run starts tasks in n goroutines and stops its work when receiving m errors from tasks.
 func Run(tasks []Task, n, m int) error {
-	var eCounter int32
-	var status int32
+	var eCounter, status int32
 	taskCh := make(chan Task)
+	wg := sync.WaitGroup{}
 
 	for i := 0; i < n; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
 			for task := range taskCh {
-				err := task()
-				if err != nil {
-					atomic.AddInt32(&eCounter, 1)
+				if task() != nil {
+					atomic.CompareAndSwapInt32(&status, atomic.AddInt32(&eCounter, 1)-int32(m), 1)
 				}
 			}
 		}()
 	}
 
-	go func() {
+	go func(tasks []Task) {
 		defer close(taskCh)
 		for _, task := range tasks {
-			if eCounter >= int32(m) {
-				atomic.AddInt32(&status, 1)
+			if atomic.CompareAndSwapInt32(&status, 1, 1) {
 				return
 			}
 			taskCh <- task
 		}
-	}()
+	}(tasks)
 
 	wg.Wait()
 
-	if status > 0 {
+	if atomic.CompareAndSwapInt32(&status, 1, 1) {
 		return ErrErrorsLimitExceeded
 	}
 
