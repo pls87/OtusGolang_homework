@@ -95,7 +95,7 @@ func (suite *parallelExecutionTestSuite) NextCase(testName string) *testCase {
 						}
 						atomic.AddInt64((*int64)(&ts.rs.pureRunningTime), int64(time.Since(start)))
 						atomic.AddInt32(&ts.rs.totalRuns, 1)
-						if i%2 == 0 {
+						if i%3 == 0 {
 							atomic.AddInt32(&ts.rs.errors, 1)
 							return err
 						}
