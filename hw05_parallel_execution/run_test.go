@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/suite"
-
 	"go.uber.org/goleak"
 )
 
@@ -18,7 +17,6 @@ type runStats struct {
 }
 
 type testCase struct {
-	title      string
 	workers    int
 	maxErrors  int
 	tasksCount int
