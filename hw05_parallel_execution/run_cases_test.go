@@ -78,8 +78,8 @@ func (suite *parallelExecutionTestSuite) NextCase(testName string) *testCase {
 	case "TestWithRealWorkAndWithSomeErrors":
 		return &testCase{
 			workers:    5,
-			maxErrors:  15,
-			tasksCount: 60,
+			maxErrors:  64,
+			tasksCount: 210,
 			generator: func(ts *parallelExecutionTestSuite) []Task {
 				tasks := make([]Task, 0, ts.tc.tasksCount)
 				for i := 0; i < ts.tc.tasksCount; i++ {
