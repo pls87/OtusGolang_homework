@@ -2,6 +2,7 @@ package hw05parallelexecution
 
 import (
 	"errors"
+	"fmt"
 	"testing"
 	"time"
 
@@ -36,6 +37,10 @@ func (suite *parallelExecutionTestSuite) SetupTest() {
 
 func (suite *parallelExecutionTestSuite) BeforeTest(_, testName string) {
 	suite.tc = suite.NextCase(testName)
+	if suite.tc == nil {
+		suite.FailNow(fmt.Sprintf("Test case not found: %s", testName))
+	}
+
 	suite.tasks = suite.tc.generator(suite)
 }
 
@@ -77,7 +82,7 @@ func (suite *parallelExecutionTestSuite) TestWithRealWorkAndWithSomeErrors() {
 	suite.LessOrEqual(int64(suite.rs.elapsedTime), int64(suite.rs.pureRunningTime/2), "tasks were run sequentially?")
 }
 
-func TestRun(t *testing.T) {
+func TestParallelExecutionRun(t *testing.T) {
 	defer goleak.VerifyNone(t)
 
 	suite.Run(t, new(parallelExecutionTestSuite))

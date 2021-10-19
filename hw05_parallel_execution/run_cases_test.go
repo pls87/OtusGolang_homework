@@ -56,20 +56,18 @@ func (suite *parallelExecutionTestSuite) NextCase(testName string) *testCase {
 			generator: func(ts *parallelExecutionTestSuite) []Task {
 				tasks := make([]Task, 0, ts.tc.tasksCount)
 				for i := 0; i < ts.tc.tasksCount; i++ {
-					tasks = append(tasks, func(j int64) Task {
-						return func() error {
-							start := time.Now()
-							var k, np1, n, nm1 int64
-							n, nm1 = 1, 1
-							for k = 0; k < j; k++ {
-								np1 = n + nm1
-								nm1, n = n, np1
-							}
-							atomic.AddInt64((*int64)(&ts.rs.pureRunningTime), int64(time.Since(start)))
-							atomic.AddInt32(&ts.rs.totalRuns, 1)
-							return nil
+					tasks = append(tasks, func() error {
+						start := time.Now()
+						var j, np1, n, nm1, l int64
+						n, nm1, l = 1, 1, 10000-rand.Int63n(5000)
+						for j = 0; j < l; j++ {
+							np1 = n + nm1 + rand.Int63n(100)
+							nm1, n = n, np1
 						}
-					}(int64(i+10)*(100*rand.Int63n(25000))))
+						atomic.AddInt64((*int64)(&ts.rs.pureRunningTime), int64(time.Since(start)))
+						atomic.AddInt32(&ts.rs.totalRuns, 1)
+						return nil
+					})
 				}
 
 				return tasks
@@ -88,9 +86,9 @@ func (suite *parallelExecutionTestSuite) NextCase(testName string) *testCase {
 					tasks = append(tasks, func() error {
 						start := time.Now()
 						var j, np1, n, nm1, l int64
-						n, nm1, l = 1, 1, int64(i)*10*rand.Int63n(25000)
+						n, nm1, l = 1, 1, 10000-rand.Int63n(5000)
 						for j = 0; j < l; j++ {
-							np1 = n + nm1
+							np1 = n + nm1 + rand.Int63n(100)
 							nm1, n = n, np1
 						}
 						atomic.AddInt64((*int64)(&ts.rs.pureRunningTime), int64(time.Since(start)))
