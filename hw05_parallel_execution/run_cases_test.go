@@ -18,49 +18,53 @@ func (suite *parallelExecutionTestSuite) NextCase(testName string) *testCase {
 		return np1
 	}
 
+	getTasksAlwaysErrors := func(ts *parallelExecutionTestSuite) []Task {
+		tasks := make([]Task, 0, ts.tc.tasksCount)
+		for i := 0; i < ts.tc.tasksCount; i++ {
+			err := fmt.Errorf("error from task %d", i)
+			tasks = append(tasks, func() error {
+				timeToSleep := 10*time.Millisecond + time.Millisecond*time.Duration(rand.Intn(100))
+				suite.Eventually(func() bool { return true }, time.Second, timeToSleep)
+
+				atomic.AddInt64((*int64)(&ts.rs.pureRunningTime), int64(timeToSleep))
+				atomic.AddInt32(&ts.rs.totalRuns, 1)
+				atomic.AddInt32(&ts.rs.errors, 1)
+				return err
+			})
+		}
+		return tasks
+	}
+
+	getTasksNoErrors := func(ts *parallelExecutionTestSuite) []Task {
+		tasks := make([]Task, 0, ts.tc.tasksCount)
+		for i := 0; i < ts.tc.tasksCount; i++ {
+			tasks = append(tasks, func() error {
+				timeToSleep := 10*time.Millisecond + time.Millisecond*time.Duration(rand.Intn(100))
+				suite.Eventually(func() bool { return true }, time.Second, timeToSleep)
+
+				atomic.AddInt64((*int64)(&ts.rs.pureRunningTime), int64(timeToSleep))
+				atomic.AddInt32(&ts.rs.totalRuns, 1)
+				return nil
+			})
+		}
+
+		return tasks
+	}
+
 	switch testName {
 	case "TestFirstMErrors":
 		return &testCase{
 			workers:    10,
 			maxErrors:  23,
 			tasksCount: 50,
-			generator: func(ts *parallelExecutionTestSuite) []Task {
-				tasks := make([]Task, 0, ts.tc.tasksCount)
-				for i := 0; i < ts.tc.tasksCount; i++ {
-					err := fmt.Errorf("error from task %d", i)
-					tasks = append(tasks, func() error {
-						timeToSleep := 10*time.Millisecond + time.Millisecond*time.Duration(rand.Intn(100))
-						suite.Eventually(func() bool { return true }, time.Second, timeToSleep)
-
-						atomic.AddInt64((*int64)(&ts.rs.pureRunningTime), int64(timeToSleep))
-						atomic.AddInt32(&ts.rs.totalRuns, 1)
-						atomic.AddInt32(&ts.rs.errors, 1)
-						return err
-					})
-				}
-				return tasks
-			},
+			generator:  getTasksAlwaysErrors,
 		}
 	case "TestNoErrors":
 		return &testCase{
 			workers:    5,
 			maxErrors:  1,
 			tasksCount: 50,
-			generator: func(ts *parallelExecutionTestSuite) []Task {
-				tasks := make([]Task, 0, ts.tc.tasksCount)
-				for i := 0; i < ts.tc.tasksCount; i++ {
-					tasks = append(tasks, func() error {
-						timeToSleep := 10*time.Millisecond + time.Millisecond*time.Duration(rand.Intn(100))
-						suite.Eventually(func() bool { return true }, time.Second, timeToSleep)
-
-						atomic.AddInt64((*int64)(&ts.rs.pureRunningTime), int64(timeToSleep))
-						atomic.AddInt32(&ts.rs.totalRuns, 1)
-						return nil
-					})
-				}
-
-				return tasks
-			},
+			generator:  getTasksNoErrors,
 		}
 	case "TestWithRealWorkAndWOErrors":
 		return &testCase{
@@ -113,48 +117,14 @@ func (suite *parallelExecutionTestSuite) NextCase(testName string) *testCase {
 			workers:    5,
 			maxErrors:  -1,
 			tasksCount: 50,
-			generator: func(ts *parallelExecutionTestSuite) []Task {
-				tasks := make([]Task, 0, ts.tc.tasksCount)
-				for i := 0; i < ts.tc.tasksCount; i++ {
-					err := fmt.Errorf("error from task %d", i)
-					i := i
-					tasks = append(tasks, func() error {
-						timeToSleep := 10*time.Millisecond + time.Millisecond*time.Duration(rand.Intn(100))
-						suite.Eventually(func() bool { return true }, time.Second, timeToSleep)
-
-						atomic.AddInt64((*int64)(&ts.rs.pureRunningTime), int64(timeToSleep))
-						atomic.AddInt32(&ts.rs.totalRuns, 1)
-						if i%2 == 0 {
-							return err
-						}
-						return nil
-					})
-				}
-
-				return tasks
-			},
+			generator:  getTasksAlwaysErrors,
 		}
 	case "TestWorkersGtTasksAndMaxErrorsGtTasks":
 		return &testCase{
 			workers:    60,
 			maxErrors:  30,
 			tasksCount: 20,
-			generator: func(ts *parallelExecutionTestSuite) []Task {
-				tasks := make([]Task, 0, ts.tc.tasksCount)
-				for i := 0; i < ts.tc.tasksCount; i++ {
-					err := fmt.Errorf("error from task %d", i)
-					tasks = append(tasks, func() error {
-						timeToSleep := 10*time.Millisecond + time.Millisecond*time.Duration(rand.Intn(100))
-						suite.Eventually(func() bool { return true }, time.Second, timeToSleep)
-
-						atomic.AddInt64((*int64)(&ts.rs.pureRunningTime), int64(timeToSleep))
-						atomic.AddInt32(&ts.rs.totalRuns, 1)
-						atomic.AddInt32(&ts.rs.errors, 1)
-						return err
-					})
-				}
-				return tasks
-			},
+			generator:  getTasksAlwaysErrors,
 		}
 	default:
 		return nil
