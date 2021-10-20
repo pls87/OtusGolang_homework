@@ -82,6 +82,24 @@ func (suite *parallelExecutionTestSuite) TestWithRealWorkAndWithSomeErrors() {
 	suite.LessOrEqual(int64(suite.rs.elapsedTime), int64(suite.rs.pureRunningTime/2), "tasks were run sequentially?")
 }
 
+func (suite *parallelExecutionTestSuite) TestNegativeErrorsCountMeansIgnoreErrors() {
+	start := time.Now()
+	err := Run(suite.tasks, suite.tc.workers, suite.tc.maxErrors)
+	suite.rs.elapsedTime = time.Since(start)
+
+	suite.NoError(err)
+	suite.Equal(suite.rs.totalRuns, int32(suite.tc.tasksCount), "not all tasks were completed")
+	suite.LessOrEqual(int64(suite.rs.elapsedTime), int64(suite.rs.pureRunningTime/2), "tasks were run sequentially?")
+}
+
+func (suite *parallelExecutionTestSuite) TestWorkersGtTasksAndMaxErrorsGtTasks() {
+	err := Run(suite.tasks, suite.tc.workers, suite.tc.maxErrors)
+
+	suite.NoError(err)
+	suite.Equal(suite.rs.totalRuns, int32(suite.tc.tasksCount), "not all tasks were completed")
+	suite.LessOrEqual(int64(suite.rs.elapsedTime), int64(suite.rs.pureRunningTime/2), "tasks were run sequentially?")
+}
+
 func TestParallelExecutionRun(t *testing.T) {
 	defer goleak.VerifyNone(t)
 
