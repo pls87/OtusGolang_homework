@@ -96,7 +96,7 @@ func (suite *pipelineTestSuite) TestSimpleCase() {
 func (suite *pipelineTestSuite) TestDoneCase() {
 	start := time.Now()
 	for s := range ExecutePipeline(suite.in, suite.done, suite.stages...) {
-		suite.result = append(suite.result, s.(string))
+		suite.result = append(suite.result, s)
 	}
 	elapsed := time.Since(start)
 	suite.Equal(suite.tc.expected, suite.result)
@@ -106,7 +106,7 @@ func (suite *pipelineTestSuite) TestDoneCase() {
 func (suite *pipelineTestSuite) TestFilterCase() {
 	start := time.Now()
 	for s := range ExecutePipeline(suite.in, suite.done, suite.stages...) {
-		suite.result = append(suite.result, s.(string))
+		suite.result = append(suite.result, s)
 	}
 	elapsed := time.Since(start)
 	suite.Equal(suite.tc.expected, suite.result)
@@ -118,7 +118,7 @@ func (suite *pipelineTestSuite) TestFilterCase() {
 func (suite *pipelineTestSuite) TestStringsCase() {
 	start := time.Now()
 	for s := range ExecutePipeline(suite.in, suite.done, suite.stages...) {
-		suite.result = append(suite.result, s.(string))
+		suite.result = append(suite.result, s)
 	}
 	elapsed := time.Since(start)
 	suite.Equal(suite.tc.expected, suite.result)
@@ -130,7 +130,7 @@ func (suite *pipelineTestSuite) TestStringsCase() {
 func (suite *pipelineTestSuite) TestEmptyCase() {
 	start := time.Now()
 	for s := range ExecutePipeline(suite.in, suite.done, suite.stages...) {
-		suite.result = append(suite.result, s.(int))
+		suite.result = append(suite.result, s)
 	}
 	elapsed := time.Since(start)
 	suite.Equal(suite.tc.expected, suite.result)
