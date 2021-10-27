@@ -14,15 +14,16 @@ const (
 	fault         = sleepPerStage / 2
 )
 
-type stageBase struct {
+type stageStub struct {
 	take        func(v interface{}) bool
 	transformer func(v interface{}) interface{}
 }
 
 type testCase struct {
 	data      []interface{}
-	generator func(suite *pipelineTestSuite, sb stageBase) Stage
-	stg       []stageBase
+	expected  []interface{}
+	generator func(suite *pipelineTestSuite, sb stageStub) Stage
+	stg       []stageStub
 	stopAfter time.Duration
 }
 
@@ -30,6 +31,7 @@ type pipelineTestSuite struct {
 	suite.Suite
 	sync.WaitGroup
 	tc       *testCase
+	result   []interface{}
 	stages   []Stage
 	in, done Bi
 }
@@ -37,6 +39,7 @@ type pipelineTestSuite struct {
 func (suite *pipelineTestSuite) SetupTest() {
 	suite.in = make(Bi)
 	suite.done = make(Bi)
+	suite.result = make([]interface{}, 0, 10)
 }
 
 func (suite *pipelineTestSuite) AfterTest(_, _ string) {
@@ -79,66 +82,71 @@ func (suite *pipelineTestSuite) BeforeTest(_, testName string) {
 }
 
 func (suite *pipelineTestSuite) TestSimpleCase() {
-	result := make([]string, 0, 10)
 	start := time.Now()
 	for s := range ExecutePipeline(suite.in, suite.done, suite.stages...) {
-		result = append(result, s.(string))
+		suite.result = append(suite.result, s)
 	}
 	elapsed := time.Since(start)
-	suite.Equal([]string{"102", "104", "106", "108", "110"}, result)
+	suite.Equal(suite.tc.expected, suite.result)
 	suite.Less(
 		int64(elapsed),
 		int64(sleepPerStage)*int64(len(suite.stages)+len(suite.tc.data)-1)+int64(fault))
 }
 
 func (suite *pipelineTestSuite) TestDoneCase() {
-	result := make([]string, 0, 10)
 	start := time.Now()
 	for s := range ExecutePipeline(suite.in, suite.done, suite.stages...) {
-		result = append(result, s.(string))
+		suite.result = append(suite.result, s.(string))
 	}
 	elapsed := time.Since(start)
-	suite.Len(result, 0)
+	suite.Equal(suite.tc.expected, suite.result)
 	suite.Less(int64(elapsed), int64(suite.tc.stopAfter)+int64(fault))
 }
 
 func (suite *pipelineTestSuite) TestFilterCase() {
-	result := make([]string, 0, 10)
 	start := time.Now()
 	for s := range ExecutePipeline(suite.in, suite.done, suite.stages...) {
-		result = append(result, s.(string))
+		suite.result = append(suite.result, s.(string))
 	}
 	elapsed := time.Since(start)
-	suite.Equal([]string{"1", "7", "11"}, result)
+	suite.Equal(suite.tc.expected, suite.result)
 	suite.Less(
 		int64(elapsed),
 		int64(sleepPerStage)*int64(len(suite.stages)+len(suite.tc.data)-1)+int64(fault))
 }
 
 func (suite *pipelineTestSuite) TestStringsCase() {
-	result := make([]string, 0, 10)
 	start := time.Now()
 	for s := range ExecutePipeline(suite.in, suite.done, suite.stages...) {
-		result = append(result, s.(string))
+		suite.result = append(suite.result, s.(string))
 	}
 	elapsed := time.Since(start)
-	suite.Equal([]string{"en0", "gnir", "elur", "meht", "lla"}, result)
+	suite.Equal(suite.tc.expected, suite.result)
 	suite.Less(
 		int64(elapsed),
 		int64(sleepPerStage)*int64(len(suite.stages)+len(suite.tc.data)-1)+int64(fault))
 }
 
 func (suite *pipelineTestSuite) TestEmptyCase() {
-	result := make([]int, 0)
 	start := time.Now()
 	for s := range ExecutePipeline(suite.in, suite.done, suite.stages...) {
-		result = append(result, s.(int))
+		suite.result = append(suite.result, s.(int))
 	}
 	elapsed := time.Since(start)
-	suite.Equal([]int{}, result)
+	suite.Equal(suite.tc.expected, suite.result)
 	suite.Less(
 		int64(elapsed),
 		int64(fault))
+}
+
+func (suite *pipelineTestSuite) TestDoneAfterFirstCoupleCase() {
+	start := time.Now()
+	for s := range ExecutePipeline(suite.in, suite.done, suite.stages...) {
+		suite.result = append(suite.result, s.(string))
+	}
+	elapsed := time.Since(start)
+	suite.Equal(suite.tc.expected, suite.result)
+	suite.Less(int64(elapsed), int64(suite.tc.stopAfter)+int64(fault))
 }
 
 func TestPipeline(t *testing.T) {

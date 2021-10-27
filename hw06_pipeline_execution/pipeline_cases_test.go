@@ -7,7 +7,7 @@ import (
 )
 
 func (suite *pipelineTestSuite) NextCase(testName string) *testCase {
-	simpleStages := []stageBase{
+	simpleStages := []stageStub{
 		{
 			take:        func(v interface{}) bool { return true },
 			transformer: func(v interface{}) interface{} { return v },
@@ -26,7 +26,7 @@ func (suite *pipelineTestSuite) NextCase(testName string) *testCase {
 		},
 	}
 
-	filterStages := []stageBase{
+	filterStages := []stageStub{
 		{
 			take:        func(v interface{}) bool { return v.(int)%2 != 0 },
 			transformer: func(v interface{}) interface{} { return v },
@@ -45,7 +45,7 @@ func (suite *pipelineTestSuite) NextCase(testName string) *testCase {
 		},
 	}
 
-	stringStages := []stageBase{
+	stringStages := []stageStub{
 		{
 			take:        func(v interface{}) bool { return true },
 			transformer: func(v interface{}) interface{} { return strings.TrimSpace(v.(string)) },
@@ -70,7 +70,7 @@ func (suite *pipelineTestSuite) NextCase(testName string) *testCase {
 		},
 	}
 
-	simpleGenerator := func(suite *pipelineTestSuite, sb stageBase) Stage {
+	simpleGenerator := func(suite *pipelineTestSuite, sb stageStub) Stage {
 		return func(in In) Out {
 			out := make(Bi)
 			go func() {
@@ -90,6 +90,7 @@ func (suite *pipelineTestSuite) NextCase(testName string) *testCase {
 	case "TestSimpleCase":
 		return &testCase{
 			data:      []interface{}{1, 2, 3, 4, 5},
+			expected:  []interface{}{"102", "104", "106", "108", "110"},
 			generator: simpleGenerator,
 			stg:       simpleStages,
 			stopAfter: -1,
@@ -97,6 +98,7 @@ func (suite *pipelineTestSuite) NextCase(testName string) *testCase {
 	case "TestDoneCase":
 		return &testCase{
 			data:      []interface{}{1, 2, 3, 4, 5},
+			expected:  []interface{}{},
 			generator: simpleGenerator,
 			stg:       simpleStages,
 			stopAfter: sleepPerStage * 2,
@@ -104,6 +106,7 @@ func (suite *pipelineTestSuite) NextCase(testName string) *testCase {
 	case "TestFilterCase":
 		return &testCase{
 			data:      []interface{}{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11},
+			expected:  []interface{}{"1", "7", "11"},
 			generator: simpleGenerator,
 			stg:       filterStages,
 			stopAfter: -1,
@@ -112,6 +115,7 @@ func (suite *pipelineTestSuite) NextCase(testName string) *testCase {
 	case "TestStringsCase":
 		return &testCase{
 			data:      []interface{}{" One  ", "Ring", " to ", "Rule  ", "  THEM", "aLL"},
+			expected:  []interface{}{"en0", "gnir", "elur", "meht", "lla"},
 			generator: simpleGenerator,
 			stg:       stringStages,
 			stopAfter: -1,
@@ -120,9 +124,18 @@ func (suite *pipelineTestSuite) NextCase(testName string) *testCase {
 	case "TestEmptyCase":
 		return &testCase{
 			data:      []interface{}{},
+			expected:  []interface{}{},
 			generator: simpleGenerator,
 			stg:       simpleStages,
 			stopAfter: -1,
+		}
+	case "TestDoneAfterFirstCoupleCase":
+		return &testCase{
+			data:      []interface{}{1, 2, 3, 4, 5},
+			expected:  []interface{}{"102", "104"},
+			generator: simpleGenerator,
+			stg:       simpleStages,
+			stopAfter: sleepPerStage*5 + fault,
 		}
 	default:
 		return nil
