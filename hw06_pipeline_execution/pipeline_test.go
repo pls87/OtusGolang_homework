@@ -115,6 +115,32 @@ func (suite *pipelineTestSuite) TestFilterCase() {
 		int64(sleepPerStage)*int64(len(suite.stages)+len(suite.tc.data)-1)+int64(fault))
 }
 
+func (suite *pipelineTestSuite) TestStringsCase() {
+	result := make([]string, 0, 10)
+	start := time.Now()
+	for s := range ExecutePipeline(suite.in, suite.done, suite.stages...) {
+		result = append(result, s.(string))
+	}
+	elapsed := time.Since(start)
+	suite.Equal([]string{"en0", "gnir", "elur", "meht", "lla"}, result)
+	suite.Less(
+		int64(elapsed),
+		int64(sleepPerStage)*int64(len(suite.stages)+len(suite.tc.data)-1)+int64(fault))
+}
+
+func (suite *pipelineTestSuite) TestEmptyCase() {
+	result := make([]int, 0)
+	start := time.Now()
+	for s := range ExecutePipeline(suite.in, suite.done, suite.stages...) {
+		result = append(result, s.(int))
+	}
+	elapsed := time.Since(start)
+	suite.Equal([]int{}, result)
+	suite.Less(
+		int64(elapsed),
+		int64(fault))
+}
+
 func TestPipeline(t *testing.T) {
 	suite.Run(t, new(pipelineTestSuite))
 }
