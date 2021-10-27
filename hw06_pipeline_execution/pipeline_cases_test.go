@@ -8,30 +8,51 @@ import (
 func (suite *pipelineTestSuite) NextCase(testName string) *testCase {
 	simpleStages := []stageBase{
 		{
-			"Dummy",
-			func(v interface{}) interface{} { return v },
+			take:        func(v interface{}) bool { return true },
+			transformer: func(v interface{}) interface{} { return v },
 		},
 		{
-			"Multiplier (* 2)",
-			func(v interface{}) interface{} { return v.(int) * 2 },
+			take:        func(v interface{}) bool { return true },
+			transformer: func(v interface{}) interface{} { return v.(int) * 2 },
 		},
 		{
-			"Adder (+ 100)",
-			func(v interface{}) interface{} { return v.(int) + 100 },
+			take:        func(v interface{}) bool { return true },
+			transformer: func(v interface{}) interface{} { return v.(int) + 100 },
 		},
 		{
-			"Stringifier",
-			func(v interface{}) interface{} { return strconv.Itoa(v.(int)) },
+			take:        func(v interface{}) bool { return true },
+			transformer: func(v interface{}) interface{} { return strconv.Itoa(v.(int)) },
 		},
 	}
-	simpleGenerator := func(sb stageBase) Stage {
+
+	filterStages := []stageBase{
+		{
+			take:        func(v interface{}) bool { return v.(int)%2 != 0 },
+			transformer: func(v interface{}) interface{} { return v },
+		},
+		{
+			take:        func(v interface{}) bool { return v.(int)%3 != 0 },
+			transformer: func(v interface{}) interface{} { return v },
+		},
+		{
+			take:        func(v interface{}) bool { return v.(int)%5 != 0 },
+			transformer: func(v interface{}) interface{} { return v },
+		},
+		{
+			take:        func(v interface{}) bool { return true },
+			transformer: func(v interface{}) interface{} { return strconv.Itoa(v.(int)) },
+		},
+	}
+	simpleGenerator := func(suite *pipelineTestSuite, sb stageBase) Stage {
 		return func(in In) Out {
 			out := make(Bi)
 			go func() {
 				defer close(out)
 				for v := range in {
-					time.Sleep(sleepPerStage)
-					out <- sb.f(v)
+					suite.Eventually(func() bool { return true }, time.Second, sleepPerStage)
+					if sb.take(v) {
+						out <- sb.transformer(v)
+					}
 				}
 			}()
 			return out
@@ -52,6 +73,13 @@ func (suite *pipelineTestSuite) NextCase(testName string) *testCase {
 			generator: simpleGenerator,
 			stg:       simpleStages,
 			stopAfter: sleepPerStage * 2,
+		}
+	case "TestFilterCase":
+		return &testCase{
+			data:      []interface{}{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11},
+			generator: simpleGenerator,
+			stg:       filterStages,
+			stopAfter: -1,
 		}
 	default:
 		return nil

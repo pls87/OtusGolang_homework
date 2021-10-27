@@ -15,13 +15,13 @@ const (
 )
 
 type stageBase struct {
-	_ string
-	f func(v interface{}) interface{}
+	take        func(v interface{}) bool
+	transformer func(v interface{}) interface{}
 }
 
 type testCase struct {
 	data      []interface{}
-	generator func(sb stageBase) Stage
+	generator func(suite *pipelineTestSuite, sb stageBase) Stage
 	stg       []stageBase
 	stopAfter time.Duration
 }
@@ -52,7 +52,7 @@ func (suite *pipelineTestSuite) BeforeTest(_, testName string) {
 
 	suite.stages = make([]Stage, len(suite.tc.stg))
 	for i, v := range suite.tc.stg {
-		suite.stages[i] = suite.tc.generator(v)
+		suite.stages[i] = suite.tc.generator(suite, v)
 	}
 
 	suite.Add(1)
@@ -88,7 +88,6 @@ func (suite *pipelineTestSuite) TestSimpleCase() {
 	suite.Equal([]string{"102", "104", "106", "108", "110"}, result)
 	suite.Less(
 		int64(elapsed),
-		// ~0.8s for processing 5 values in 4 stages (100ms every) concurrently
 		int64(sleepPerStage)*int64(len(suite.stages)+len(suite.tc.data)-1)+int64(fault))
 }
 
@@ -101,6 +100,19 @@ func (suite *pipelineTestSuite) TestDoneCase() {
 	elapsed := time.Since(start)
 	suite.Len(result, 0)
 	suite.Less(int64(elapsed), int64(suite.tc.stopAfter)+int64(fault))
+}
+
+func (suite *pipelineTestSuite) TestFilterCase() {
+	result := make([]string, 0, 10)
+	start := time.Now()
+	for s := range ExecutePipeline(suite.in, suite.done, suite.stages...) {
+		result = append(result, s.(string))
+	}
+	elapsed := time.Since(start)
+	suite.Equal([]string{"1", "7", "11"}, result)
+	suite.Less(
+		int64(elapsed),
+		int64(sleepPerStage)*int64(len(suite.stages)+len(suite.tc.data)-1)+int64(fault))
 }
 
 func TestPipeline(t *testing.T) {

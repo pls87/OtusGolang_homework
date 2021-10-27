@@ -12,7 +12,7 @@ func runStage(done In, in In, stage Stage) Out {
 	out := make(Bi)
 	stageOut := stage(in)
 
-	go func() {
+	go func(out Bi) {
 		defer close(out)
 		for {
 			select {
@@ -25,7 +25,7 @@ func runStage(done In, in In, stage Stage) Out {
 				out <- val
 			}
 		}
-	}()
+	}(out)
 	return out
 }
 
