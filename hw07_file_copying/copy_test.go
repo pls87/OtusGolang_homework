@@ -2,64 +2,97 @@ package main
 
 import (
 	"errors"
+	"os"
 	"testing"
 
-	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/suite"
 )
 
-func TestInitialFileChecks(t *testing.T) {
-	cases := []struct {
-		initialParams  CopyParams
-		expectedParams CopyParams
-		err            error
-		name           string
-	}{
-		{
-			initialParams:  CopyParams{from: "./testdata/input.txt", to: "out.txt", offset: 0, limit: 0},
-			expectedParams: CopyParams{from: "./testdata/input.txt", to: "out.txt", offset: 0, limit: 6617},
-			err:            nil,
-			name:           "Very simple positive case",
-		},
-		{
-			initialParams:  CopyParams{from: "./testdata/input.txt", to: "out.txt", offset: 0x100000, limit: 0},
-			expectedParams: CopyParams{},
-			err:            ErrOffsetExceedsFileSize,
-			name:           "Offset greater than source file size generates error",
-		},
-		{
-			initialParams:  CopyParams{from: "./testdata/input.txt", to: "out.txt", offset: 0, limit: 0x100000},
-			expectedParams: CopyParams{from: "./testdata/input.txt", to: "out.txt", offset: 0, limit: 6617},
-			err:            nil,
-			name:           "Limit greater than source file size",
-		},
-		{
-			initialParams:  CopyParams{from: "./testdata/input.txt", to: "out.txt", offset: 17, limit: 0x100000},
-			expectedParams: CopyParams{from: "./testdata/input.txt", to: "out.txt", offset: 17, limit: 6600},
-			err:            nil,
-			name:           "Limit greater than source file size and not zero offset",
-		},
-		{
-			initialParams:  CopyParams{from: "./testdata/input.txt", to: "out.txt", offset: -10, limit: 6000},
-			expectedParams: CopyParams{from: "./testdata/input.txt", to: "out.txt", offset: 0, limit: 6000},
-			err:            nil,
-			name:           "Limit less than source file size and negative offset",
-		},
-		{
-			initialParams:  CopyParams{from: "/dev/urandom", to: "out.txt", offset: 0, limit: 0},
-			expectedParams: CopyParams{},
-			err:            ErrUnsupportedFile,
-			name:           "Not ordinary file: '/dev/urandom' generates error",
-		},
+type expectedResult struct {
+	err          error
+	destSize     int64
+	checkContent bool
+	content      string
+}
+
+type copyTestSuite struct {
+	suite.Suite
+	params   CopyParams
+	expected expectedResult
+}
+
+func (suite *copyTestSuite) TearDownTest() {
+	os.Remove(suite.params.to)
+}
+
+func (suite *copyTestSuite) TestSimpleCase() {
+	suite.params = CopyParams{from: "./testdata/input.txt", to: "out.txt", offset: 10, limit: 10000}
+	suite.expected = expectedResult{err: nil, destSize: 6607}
+
+	suite.RunTest()
+}
+
+func (suite *copyTestSuite) TestNoPermissionsCase() {
+	suite.params = CopyParams{from: "./testdata/input.txt", to: "/etc/hosts", offset: 10, limit: 20}
+	suite.expected = expectedResult{err: os.ErrPermission}
+
+	suite.RunTest()
+}
+
+func (suite *copyTestSuite) TestCheckTextInResultCase() {
+	suite.params = CopyParams{from: "./testdata/input.txt", to: "out.txt", offset: 10, limit: 12}
+	suite.expected = expectedResult{err: nil, destSize: 12, checkContent: true, content: "ts\nPackages\n"}
+
+	suite.RunTest()
+}
+
+func (suite *copyTestSuite) TestNegativeOffsetCase() {
+	suite.params = CopyParams{from: "./testdata/input.txt", to: "out.txt", offset: -10, limit: 2}
+	suite.expected = expectedResult{err: nil, destSize: 2, checkContent: true, content: "Go"}
+
+	suite.RunTest()
+}
+
+func (suite *copyTestSuite) TestNegativeOffsetAndLargeLimitCase() {
+	suite.params = CopyParams{from: "./testdata/input.txt", to: "out.txt", offset: -10, limit: 10000}
+	suite.expected = expectedResult{err: nil, destSize: 6617}
+
+	suite.RunTest()
+}
+
+func (suite *copyTestSuite) RunTest() {
+	finish := make(chan error)
+	progress := make(chan int64)
+	var progressCounter int64
+
+	go copy(&suite.params, progress, finish)
+
+	var status error
+	for {
+		select {
+		case status = <-finish:
+		case delta := <-progress:
+			progressCounter += delta
+		}
+		break
 	}
-	for _, tc := range cases {
-		tc := tc
-		t.Run(tc.name, func(t *testing.T) {
-			err := initialChecks(&tc.initialParams)
-			if tc.err != nil {
-				require.True(t, errors.Is(err, tc.err), "actual error %q", err)
-			} else {
-				require.Equal(t, tc.expectedParams, tc.initialParams)
-			}
-		})
+
+	if suite.expected.err != nil {
+		suite.True(errors.Is(status, suite.expected.err), "actual error %q", status)
+	} else {
+		suite.Equal(suite.expected.destSize, progressCounter)
+		stat, _ := os.Stat(suite.params.to)
+		suite.Equal(stat.Size(), suite.expected.destSize)
+
+		if suite.expected.checkContent {
+			buf := make([]byte, suite.params.limit)
+			f, _ := os.Open(suite.params.to)
+			f.Read(buf)
+			suite.Equal(suite.expected.content, string(buf))
+		}
 	}
+}
+
+func TestCopy(t *testing.T) {
+	suite.Run(t, new(copyTestSuite))
 }

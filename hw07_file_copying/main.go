@@ -57,7 +57,7 @@ func main() {
 
 	progress, finish := make(chan int64), make(chan error)
 
-	go Copy(params, progress, finish)
+	go copy(params, progress, finish)
 
 	bar := pb.Start64(params.limit)
 	for {
@@ -67,9 +67,9 @@ func main() {
 				fmt.Println("Error occurred: ", status)
 			}
 			bar.Finish()
-			return
 		case delta := <-progress:
 			bar.Add64(delta)
 		}
+		break
 	}
 }

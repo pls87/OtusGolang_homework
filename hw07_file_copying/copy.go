@@ -39,7 +39,7 @@ func postError(finish chan error, err error, postAnyway bool) bool {
 	return post
 }
 
-func Copy(params *CopyParams, progress chan int64, finish chan error) {
+func copy(params *CopyParams, progress chan int64, finish chan error) {
 	from, err := os.Open(params.from)
 	if postError(finish, err, false) {
 		return
