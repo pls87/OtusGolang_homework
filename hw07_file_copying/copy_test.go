@@ -87,7 +87,7 @@ func (suite *copyTestSuite) RunTest() {
 		suite.True(errors.Is(status, suite.expected.err), "actual error %q", status)
 		return
 	}
-	
+
 	suite.Equal(suite.expected.destSize, progressCounter)
 	stat, _ := os.Stat(suite.params.to)
 	suite.Equal(stat.Size(), suite.expected.destSize)
