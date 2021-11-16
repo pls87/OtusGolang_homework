@@ -14,8 +14,8 @@ type CopyParams struct {
 	limit, offset int64
 }
 
-var params = &CopyParams{}
 var (
+	params                   = &CopyParams{}
 	ErrUnsupportedFile       = errors.New("unsupported file")
 	ErrOffsetExceedsFileSize = errors.New("offset exceeds file size")
 )
@@ -23,7 +23,7 @@ var (
 func init() {
 	flag.StringVar(&params.from, "from", "", "file to read from")
 	flag.StringVar(&params.to, "to", "", "file to write to")
-	flag.Int64Var(&params.limit, "limit", 0, "limit of bytes to copy")
+	flag.Int64Var(&params.limit, "limit", 0, "limit of bytes to cp")
 	flag.Int64Var(&params.offset, "offset", 0, "offset in input file")
 }
 
@@ -57,7 +57,7 @@ func main() {
 
 	progress, finish := make(chan int64), make(chan error)
 
-	go copy(params, progress, finish)
+	go cp(params, progress, finish)
 
 	bar := pb.Start64(params.limit)
 	for {
@@ -67,9 +67,9 @@ func main() {
 				fmt.Println("Error occurred: ", status)
 			}
 			bar.Finish()
+			return
 		case delta := <-progress:
 			bar.Add64(delta)
 		}
-		break
 	}
 }

@@ -21,6 +21,10 @@ type copyTestSuite struct {
 	expected expectedResult
 }
 
+func (suite *copyTestSuite) SetupTest() {
+	chunkSize = 32
+}
+
 func (suite *copyTestSuite) TearDownTest() {
 	os.Remove(suite.params.to)
 }
@@ -65,17 +69,18 @@ func (suite *copyTestSuite) RunTest() {
 	progress := make(chan int64)
 	var progressCounter int64
 
-	go copy(&suite.params, progress, finish)
+	go cp(&suite.params, progress, finish)
 
-	var status error
-	for {
-		select {
-		case status = <-finish:
-		case delta := <-progress:
-			progressCounter += delta
+	status := func() error {
+		for {
+			select {
+			case err := <-finish:
+				return err
+			case delta := <-progress:
+				progressCounter += delta
+			}
 		}
-		break
-	}
+	}()
 
 	if suite.expected.err != nil {
 		suite.True(errors.Is(status, suite.expected.err), "actual error %q", status)

@@ -6,8 +6,10 @@ import (
 	"os"
 )
 
+var chunkSize int64 = 0x20000 // 128KB
+
 func makeCopy(from io.Reader, to io.Writer, limit int64, progress chan int64) (err error) {
-	var chunk, remaining int64 = 0x20000, limit
+	chunk, remaining := chunkSize, limit
 	var count int64
 	for remaining > 0 && !errors.Is(err, io.EOF) {
 		if remaining < chunk {
@@ -39,7 +41,7 @@ func postError(finish chan error, err error, postAnyway bool) bool {
 	return post
 }
 
-func copy(params *CopyParams, progress chan int64, finish chan error) {
+func cp(params *CopyParams, progress chan int64, finish chan error) {
 	from, err := os.Open(params.from)
 	if postError(finish, err, false) {
 		return
