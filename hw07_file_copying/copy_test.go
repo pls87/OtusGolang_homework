@@ -85,17 +85,18 @@ func (suite *copyTestSuite) RunTest() {
 
 	if suite.expected.err != nil {
 		suite.True(errors.Is(status, suite.expected.err), "actual error %q", status)
-	} else {
-		suite.Equal(suite.expected.destSize, progressCounter)
-		stat, _ := os.Stat(suite.params.to)
-		suite.Equal(stat.Size(), suite.expected.destSize)
-
-		// check content via md5 checksum
-		buf := make([]byte, suite.expected.destSize)
-		f, _ := os.Open(suite.params.to)
-		f.Read(buf)
-		suite.Equal(suite.expected.checksum, fmt.Sprintf("%x", md5.Sum(buf)))
+		return
 	}
+	
+	suite.Equal(suite.expected.destSize, progressCounter)
+	stat, _ := os.Stat(suite.params.to)
+	suite.Equal(stat.Size(), suite.expected.destSize)
+
+	// check content via md5 checksum
+	buf := make([]byte, suite.expected.destSize)
+	f, _ := os.Open(suite.params.to)
+	f.Read(buf)
+	suite.Equal(suite.expected.checksum, fmt.Sprintf("%x", md5.Sum(buf)))
 }
 
 func TestCopy(t *testing.T) {
