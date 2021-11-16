@@ -27,6 +27,9 @@ func makeCopy(from io.Reader, to io.Writer, limit int64, progress chan int64) (e
 		remaining -= count
 		progress <- count
 	}
+	if errors.Is(err, io.EOF) {
+		err = nil
+	}
 
 	close(progress)
 	return err

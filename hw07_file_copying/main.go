@@ -28,6 +28,10 @@ func initialChecks(params *CopyParams) error {
 		return ErrUnsupportedFile
 	}
 
+	if params.offset < 0 {
+		params.offset = 0
+	}
+
 	if stat.Size() <= params.offset {
 		return ErrOffsetExceedsFileSize
 	}
@@ -53,9 +57,9 @@ func main() {
 	bar := pb.Start64(params.limit)
 	for {
 		select {
-		case err := <-finish:
-			if err != nil {
-				fmt.Println("Error occurred: ", err)
+		case status := <-finish:
+			if status != nil {
+				fmt.Println("Error occurred: ", status)
 			}
 			bar.Finish()
 			return
