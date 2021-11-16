@@ -6,11 +6,6 @@ import (
 	"os"
 )
 
-var (
-	ErrUnsupportedFile       = errors.New("unsupported file")
-	ErrOffsetExceedsFileSize = errors.New("offset exceeds file size")
-)
-
 func makeCopy(from io.Reader, to io.Writer, limit int64, progress chan int64) (err error) {
 	var chunk, remaining int64 = 0x20000, limit
 	var count int64

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"os"
@@ -14,6 +15,10 @@ type CopyParams struct {
 }
 
 var params = &CopyParams{}
+var (
+	ErrUnsupportedFile       = errors.New("unsupported file")
+	ErrOffsetExceedsFileSize = errors.New("offset exceeds file size")
+)
 
 func init() {
 	flag.StringVar(&params.from, "from", "", "file to read from")
