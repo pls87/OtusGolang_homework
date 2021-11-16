@@ -15,7 +15,7 @@ type CopyParams struct {
 }
 
 var (
-	params                   = &CopyParams{}
+	params                   = CopyParams{}
 	ErrUnsupportedFile       = errors.New("unsupported file")
 	ErrOffsetExceedsFileSize = errors.New("offset exceeds file size")
 )
@@ -50,7 +50,7 @@ func initialChecks(params *CopyParams) error {
 func main() {
 	flag.Parse()
 
-	if err := initialChecks(params); err != nil {
+	if err := initialChecks(&params); err != nil {
 		fmt.Println(err)
 		return
 	}

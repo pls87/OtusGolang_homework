@@ -69,7 +69,7 @@ func (suite *copyTestSuite) RunTest() {
 	progress := make(chan int64)
 	var progressCounter int64
 
-	go cp(&suite.params, progress, finish)
+	go cp(suite.params, progress, finish)
 
 	status := func() error {
 		for {
