@@ -1,7 +1,9 @@
 package main
 
 import (
+	"crypto/md5"
 	"errors"
+	"fmt"
 	"os"
 	"testing"
 
@@ -9,10 +11,9 @@ import (
 )
 
 type expectedResult struct {
-	err          error
-	destSize     int64
-	checkContent bool
-	content      string
+	err      error
+	destSize int64
+	checksum string
 }
 
 type copyTestSuite struct {
@@ -31,7 +32,7 @@ func (suite *copyTestSuite) TearDownTest() {
 
 func (suite *copyTestSuite) TestSimpleCase() {
 	suite.params = CopyParams{from: "./testdata/input.txt", to: "out.txt", offset: 10, limit: 10000}
-	suite.expected = expectedResult{err: nil, destSize: 6607}
+	suite.expected = expectedResult{err: nil, destSize: 6607, checksum: "0e27306b7a21bfef46eb51718d6c7c2d"}
 
 	suite.RunTest()
 }
@@ -45,21 +46,21 @@ func (suite *copyTestSuite) TestNoPermissionsCase() {
 
 func (suite *copyTestSuite) TestCheckTextInResultCase() {
 	suite.params = CopyParams{from: "./testdata/input.txt", to: "out.txt", offset: 10, limit: 12}
-	suite.expected = expectedResult{err: nil, destSize: 12, checkContent: true, content: "ts\nPackages\n"}
+	suite.expected = expectedResult{err: nil, destSize: 12, checksum: "0514cfc175893c2ce8e3d6141cc66914"}
 
 	suite.RunTest()
 }
 
 func (suite *copyTestSuite) TestNegativeOffsetCase() {
 	suite.params = CopyParams{from: "./testdata/input.txt", to: "out.txt", offset: -10, limit: 2}
-	suite.expected = expectedResult{err: nil, destSize: 2, checkContent: true, content: "Go"}
+	suite.expected = expectedResult{err: nil, destSize: 2, checksum: "5f075ae3e1f9d0382bb8c4632991f96f"}
 
 	suite.RunTest()
 }
 
 func (suite *copyTestSuite) TestNegativeOffsetAndLargeLimitCase() {
 	suite.params = CopyParams{from: "./testdata/input.txt", to: "out.txt", offset: -10, limit: 10000}
-	suite.expected = expectedResult{err: nil, destSize: 6617}
+	suite.expected = expectedResult{err: nil, destSize: 6617, checksum: "6af260e634c98459961ff62443267b74"}
 
 	suite.RunTest()
 }
@@ -89,12 +90,11 @@ func (suite *copyTestSuite) RunTest() {
 		stat, _ := os.Stat(suite.params.to)
 		suite.Equal(stat.Size(), suite.expected.destSize)
 
-		if suite.expected.checkContent {
-			buf := make([]byte, suite.params.limit)
-			f, _ := os.Open(suite.params.to)
-			f.Read(buf)
-			suite.Equal(suite.expected.content, string(buf))
-		}
+		// check content via md5 checksum
+		buf := make([]byte, suite.expected.destSize)
+		f, _ := os.Open(suite.params.to)
+		f.Read(buf)
+		suite.Equal(suite.expected.checksum, fmt.Sprintf("%x", md5.Sum(buf)))
 	}
 }
 
