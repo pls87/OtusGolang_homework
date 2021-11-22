@@ -54,7 +54,7 @@ func TestInitialFileChecks(t *testing.T) {
 	for _, tc := range cases {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
-			err := initialChecks(&tc.initialParams)
+			err := initialFileChecks(&tc.initialParams)
 			if tc.err != nil {
 				require.True(t, errors.Is(err, tc.err), "actual error %q", err)
 			} else {

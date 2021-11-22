@@ -4,7 +4,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"os"
 
 	"github.com/cheggaaa/pb/v3"
 )
@@ -27,30 +26,10 @@ func init() {
 	flag.Int64Var(&params.offset, "offset", 0, "offset in input file")
 }
 
-func initialChecks(params *CopyParams) error {
-	stat, _ := os.Stat(params.from)
-	if !stat.Mode().IsRegular() {
-		return ErrUnsupportedFile
-	}
-
-	if params.offset < 0 {
-		params.offset = 0
-	}
-
-	if stat.Size() <= params.offset {
-		return ErrOffsetExceedsFileSize
-	}
-
-	if params.limit <= 0 || params.limit > stat.Size()-params.offset {
-		params.limit = stat.Size() - params.offset
-	}
-	return nil
-}
-
 func main() {
 	flag.Parse()
 
-	if err := initialChecks(&params); err != nil {
+	if err := initialFileChecks(&params); err != nil {
 		fmt.Println(err)
 		return
 	}
