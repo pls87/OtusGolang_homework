@@ -19,23 +19,28 @@ type EnvValue struct {
 	NeedRemove bool
 }
 
+type skipPredicate func(d fs.DirEntry) (skip bool)
+
 // walkDir walks through a specified directory and sends file paths into the channel of results.
-func walkDir(dir string, result chan string, status chan error) {
+func walkDir(dir string, result chan string, status chan error, skip skipPredicate) {
 	defer close(result)
 	defer close(status)
 
-	err := filepath.WalkDir(dir, func(p string, d fs.DirEntry, e error) error {
-		if p == dir {
+	status <- filepath.WalkDir(dir, func(p string, d fs.DirEntry, e error) error {
+		if e != nil {
+			return e
+		}
+
+		if p == dir || skip(d) {
 			return nil
 		}
-		if d.IsDir() || e != nil {
+
+		if d.IsDir() {
 			return fs.SkipDir
 		}
 		result <- p
 		return nil
 	})
-
-	status <- err
 }
 
 func handleEnvVal(val []byte) string {
@@ -74,7 +79,9 @@ func ReadDir(dir string) (res Environment, err error) {
 	files := make(chan string)
 	status := make(chan error)
 
-	go walkDir(dir, files, status)
+	go walkDir(dir, files, status, func(d fs.DirEntry) (skip bool) {
+		return strings.Contains(d.Name(), "=")
+	})
 
 	for {
 		select {
