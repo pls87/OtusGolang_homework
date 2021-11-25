@@ -22,25 +22,31 @@ type EnvValue struct {
 type skipPredicate func(d fs.DirEntry) (skip bool)
 
 // walkDir walks through a specified directory and sends file paths into the channel of results.
-func walkDir(dir string, result chan string, status chan error, skip skipPredicate) {
-	defer close(result)
-	defer close(status)
+func walkDir(dir string, skip skipPredicate) (result chan string, status chan error) {
+	result = make(chan string)
+	status = make(chan error)
 
-	status <- filepath.WalkDir(dir, func(p string, d fs.DirEntry, e error) error {
-		if e != nil {
-			return e
-		}
+	go func() {
+		status <- filepath.WalkDir(dir, func(p string, d fs.DirEntry, e error) error {
+			if e != nil {
+				return e
+			}
 
-		if p == dir || skip(d) {
+			if p == dir || skip(d) {
+				return nil
+			}
+
+			if d.IsDir() {
+				return fs.SkipDir
+			}
+			result <- p
 			return nil
-		}
+		})
+		close(result)
+		close(status)
+	}()
 
-		if d.IsDir() {
-			return fs.SkipDir
-		}
-		result <- p
-		return nil
-	})
+	return result, status
 }
 
 func handleEnvVal(val []byte) string {
@@ -76,10 +82,7 @@ func readValueFromFile(path string) (EnvValue, error) {
 // Variables represented as files where filename is name of variable, file first line is a value.
 func ReadDir(dir string) (res Environment, err error) {
 	res = make(Environment)
-	files := make(chan string)
-	status := make(chan error)
-
-	go walkDir(dir, files, status, func(d fs.DirEntry) (skip bool) {
+	files, status := walkDir(dir, func(d fs.DirEntry) (skip bool) {
 		return strings.Contains(d.Name(), "=")
 	})
 
