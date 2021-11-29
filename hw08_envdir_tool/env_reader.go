@@ -49,7 +49,7 @@ func walkDir(dir string, skip skipPredicate) (result chan string, status chan er
 	return result, status
 }
 
-func handleEnvVal(val []byte) string {
+func transformVal(val []byte) string {
 	return strings.TrimRight(
 		string(
 			bytes.ReplaceAll(val, []byte{0x00}, []byte("\n")),
@@ -75,7 +75,7 @@ func readValueFromFile(path string) (EnvValue, error) {
 		return EnvValue{}, e
 	}
 
-	return EnvValue{Value: handleEnvVal(lineBytes)}, nil
+	return EnvValue{Value: transformVal(lineBytes)}, nil
 }
 
 // ReadDir reads a specified directory and returns map of env variables.

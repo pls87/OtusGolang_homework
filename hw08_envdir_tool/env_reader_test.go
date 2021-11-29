@@ -1,12 +1,13 @@
 package main
 
 import (
+	"io/fs"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 )
 
-type testCase struct {
+type readerTestCase struct {
 	name     string
 	path     string
 	expected Environment
@@ -14,7 +15,7 @@ type testCase struct {
 }
 
 func TestReadDir(t *testing.T) {
-	cases := []testCase{
+	cases := []readerTestCase{
 		{
 			name: "simple case based on env testdata",
 			path: "./testdata/env",
@@ -43,13 +44,13 @@ func TestReadDir(t *testing.T) {
 			},
 			err: nil,
 		}, {
-			name: "case with no permission",
-			path: "./testdata/more_tests/test_2",
+			name: "case with not existing path",
+			path: "/bin/this_path_does_not_exist/",
 			expected: Environment{
 				"EMPTY_FIRST_LINE": EnvValue{Value: "", NeedRemove: false},
 				"ZERO_FILE":        EnvValue{Value: "", NeedRemove: true},
 			},
-			err: nil,
+			err: fs.ErrNotExist,
 		},
 	}
 
