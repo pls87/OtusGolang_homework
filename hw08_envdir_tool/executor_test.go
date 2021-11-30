@@ -103,8 +103,8 @@ func (suite *executorTestSuite) TestRemoveEnvVariable() {
 func (suite *executorTestSuite) TestInput() {
 	suite.testCase = executorTestCase{
 		command:  []string{"head", "-n 1"},
-		input:    []string{"just a string"},
-		expected: executorExpected{returnCode: 0, stdOutput: "just a string"},
+		input:    []string{"This is just a string"},
+		expected: executorExpected{returnCode: 0, stdOutput: "This is just a string"},
 	}
 
 	suite.runTest()
