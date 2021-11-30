@@ -13,33 +13,39 @@ type executorExpected struct {
 }
 
 type executorTestCase struct {
-	name     string
 	command  []string
 	env      Environment
+	input    []string
 	expected executorExpected
 }
 
 type executorTestSuite struct {
 	suite.Suite
 	stdOut   *os.File
+	stdIn    *os.File
 	cmdOut   *os.File
+	cmdIn    *os.File
 	testCase executorTestCase
 }
 
 func (suite *executorTestSuite) SetupTest() {
 	suite.cmdOut, _ = os.Create("./testdata/test_output.txt")
+	suite.cmdIn, _ = os.Create("./testdata/test_input.txt")
 	suite.stdOut = os.Stdout
+	suite.stdIn = os.Stdin
 	os.Stdout = suite.cmdOut
+	os.Stdin = suite.cmdIn
 }
 
 func (suite *executorTestSuite) TearDownTest() {
 	os.Remove("./testdata/test_output.txt")
+	os.Remove("./testdata/test_input.txt")
 	os.Stdout = suite.stdOut
+	os.Stdin = suite.stdIn
 }
 
 func (suite *executorTestSuite) TestSimpleLSCommandWithCheckStdOutput() {
 	suite.testCase = executorTestCase{
-		name:     "ls command",
 		command:  []string{"ls", "/bin/bash"},
 		expected: executorExpected{returnCode: 0, stdOutput: "/bin/bash\n"},
 	}
@@ -49,7 +55,6 @@ func (suite *executorTestSuite) TestSimpleLSCommandWithCheckStdOutput() {
 
 func (suite *executorTestSuite) TestWithParametersAndCheckStdOutput() {
 	suite.testCase = executorTestCase{
-		name:     "head command",
 		command:  []string{"head", "-n 1", "./testdata/env/BAR"},
 		expected: executorExpected{returnCode: 0, stdOutput: "bar\n"},
 	}
@@ -59,7 +64,6 @@ func (suite *executorTestSuite) TestWithParametersAndCheckStdOutput() {
 
 func (suite *executorTestSuite) TestUnknownCommand() {
 	suite.testCase = executorTestCase{
-		name:     "unknown command",
 		command:  []string{"this_command_is_unknown"},
 		expected: executorExpected{returnCode: 1},
 	}
@@ -69,7 +73,6 @@ func (suite *executorTestSuite) TestUnknownCommand() {
 
 func (suite *executorTestSuite) TestEnvVariable() {
 	suite.testCase = executorTestCase{
-		name:    "echo $BAR",
 		command: []string{"/bin/sh", "-c", "echo $BAR"},
 		env: Environment{
 			"BAR": EnvValue{
@@ -83,7 +86,33 @@ func (suite *executorTestSuite) TestEnvVariable() {
 	suite.runTest()
 }
 
+func (suite *executorTestSuite) TestRemoveEnvVariable() {
+	suite.testCase = executorTestCase{
+		command: []string{"/bin/sh", "-c", "echo $HOME"},
+		env: Environment{
+			"HOME": EnvValue{
+				NeedRemove: true,
+			},
+		},
+		expected: executorExpected{returnCode: 0, stdOutput: "\n"},
+	}
+
+	suite.runTest()
+}
+
+func (suite *executorTestSuite) TestInput() {
+	suite.testCase = executorTestCase{
+		command:  []string{"head", "-n 1"},
+		input:    []string{"just a string"},
+		expected: executorExpected{returnCode: 0, stdOutput: "just a string"},
+	}
+
+	suite.runTest()
+}
+
 func (suite *executorTestSuite) runTest() {
+	suite.writeInput()
+
 	code := RunCmd(suite.testCase.command, suite.testCase.env)
 
 	suite.Equal(suite.testCase.expected.returnCode, code)
@@ -96,6 +125,13 @@ func (suite *executorTestSuite) readOutput() string {
 	read, _ := suite.cmdOut.Read(buf)
 
 	return string(buf[0:read])
+}
+
+func (suite *executorTestSuite) writeInput() {
+	for _, line := range suite.testCase.input {
+		suite.cmdIn.Write([]byte(line))
+	}
+	suite.cmdIn.Seek(0, 0)
 }
 
 func TestRunCmd(t *testing.T) {

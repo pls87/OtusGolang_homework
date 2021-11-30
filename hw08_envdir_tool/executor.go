@@ -10,13 +10,14 @@ import (
 
 // RunCmd runs a command + arguments (cmd) with environment variables from env.
 func RunCmd(cmd []string, env Environment) (returnCode int) {
-	path, remaining := cmd[0], cmd[1:]
+	path, remaining := cmd[0], make([]string, 0)
+
+	if len(cmd) > 1 {
+		remaining = cmd[1:]
+	}
 
 	ex := exec.Command(path, remaining...)
-
-	ex.Stdout = os.Stdout
-	ex.Stderr = os.Stderr
-	ex.StdinPipe()
+	ex.Stdout, ex.Stderr, ex.Stdin = os.Stdout, os.Stderr, os.Stdin
 
 	ex.Env = os.Environ()
 	for k, v := range env {
