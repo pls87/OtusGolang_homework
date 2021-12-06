@@ -58,9 +58,8 @@ func (v ValidationErrors) Error() string {
 	return "TODO// To show validation errors here"
 }
 
-func validateInt(field string, v reflect.Value, steps []validationStep) (ev ValidationErrors, e error) {
+func validateInt(field string, val int64, steps []validationStep) (ev ValidationErrors, e error) {
 	ev = make(ValidationErrors, 0, 3)
-	val := v.Int()
 
 	for _, step := range steps {
 		switch step.Op {
@@ -86,6 +85,28 @@ func validateInt(field string, v reflect.Value, steps []validationStep) (ev Vali
 					Err:   fmt.Errorf("validation error for field %s: max %d expected but got %d", field, max, val),
 				})
 			}
+		case "in":
+			set := strings.Split(step.Param, ",")
+			found := false
+			for _, strI := range set {
+				i, err := strconv.ParseInt(strI, 10, 64)
+				if err != nil {
+					return nil, err
+				}
+				found = i == val
+				if found {
+					break
+				}
+			}
+			if !found {
+				ev = append(ev, ValidationError{
+					Field: field,
+					Err: fmt.Errorf(
+						"validation error for field %s: %d expected to be in {%s} but actually doesn't",
+						field, val, step.Param,
+					),
+				})
+			}
 		default:
 			return nil, ErrUnsupportedValidationRule
 		}
@@ -94,9 +115,8 @@ func validateInt(field string, v reflect.Value, steps []validationStep) (ev Vali
 	return ev, nil
 }
 
-func validateString(field string, v reflect.Value, steps []validationStep) (ev ValidationErrors, e error) {
+func validateString(field string, val string, steps []validationStep) (ev ValidationErrors, e error) {
 	ev = make(ValidationErrors, 0, 3)
-	val := v.String()
 
 	for _, step := range steps {
 		switch step.Op {
@@ -126,6 +146,24 @@ func validateString(field string, v reflect.Value, steps []validationStep) (ev V
 					),
 				})
 			}
+		case "in":
+			set := strings.Split(step.Param, ",")
+			found := false
+			for _, str := range set {
+				found = str == val
+				if found {
+					break
+				}
+			}
+			if !found {
+				ev = append(ev, ValidationError{
+					Field: field,
+					Err: fmt.Errorf(
+						"validation error for field %s: %s expected to be in {%s} but actually doesn't",
+						field, val, step.Param,
+					),
+				})
+			}
 		default:
 			return nil, ErrUnsupportedValidationRule
 		}
@@ -149,21 +187,42 @@ func Validate(v interface{}) error {
 		if err != nil {
 			return err
 		}
+
 		fv := val.Field(i)
 
 		switch f.Type.String() {
 		case "int":
-			valErr, e := validateInt(f.Name, fv, steps)
+			valErr, e := validateInt(f.Name, fv.Int(), steps)
 			if e != nil {
 				return err
 			}
 			ve = append(ve, valErr...)
 		case "string":
-			valErr, e := validateString(f.Name, fv, steps)
+			valErr, e := validateString(f.Name, fv.String(), steps)
 			if e != nil {
 				return err
 			}
 			ve = append(ve, valErr...)
+		case "[]int":
+			sliceI, _ := fv.Interface().([]int64)
+
+			for _, val := range sliceI {
+				valErr, e := validateInt(f.Name, val, steps)
+				if e != nil {
+					return err
+				}
+				ve = append(ve, valErr...)
+			}
+		case "[]string":
+			sliceI, _ := fv.Interface().([]string)
+
+			for _, val := range sliceI {
+				valErr, e := validateString(f.Name, val, steps)
+				if e != nil {
+					return err
+				}
+				ve = append(ve, valErr...)
+			}
 		}
 	}
 	return ve
