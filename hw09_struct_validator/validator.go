@@ -4,15 +4,16 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
-	"regexp"
-	"strconv"
 	"strings"
 )
 
 var (
 	ErrFormat                    = errors.New("invalid validation tag")
 	ErrUnsupportedValidationRule = errors.New("invalid validation rule")
+	ErrUnsupportedType           = errors.New("invalid validation type")
 )
+
+var int64Type, strType = reflect.TypeOf((int64)(0)), reflect.TypeOf("")
 
 type validationStep struct {
 	Op    string
@@ -55,124 +56,90 @@ type ValidationError struct {
 type ValidationErrors []ValidationError
 
 func (v ValidationErrors) Error() string {
-	return "TODO// To show validation errors here"
+	builder := strings.Builder{}
+	for _, ve := range v {
+		builder.WriteString(fmt.Sprintf("Field '%s': ", ve.Field))
+		builder.WriteString(ve.Err.Error())
+		builder.WriteString("\n")
+	}
+	return builder.String()
 }
 
-func validateInt(field string, val int64, steps []validationStep) (ev ValidationErrors, e error) {
+func validateInt(field string, value reflect.Value, steps []validationStep) (ev ValidationErrors, e error) {
 	ev = make(ValidationErrors, 0, 3)
+	val := value.Convert(int64Type).Int()
 
 	for _, step := range steps {
+		var valErr *ValidationError
 		switch step.Op {
 		case "min":
-			min, err := strconv.ParseInt(step.Param, 10, 64)
-			if err != nil {
-				return nil, err
-			}
-			if val < min {
-				ev = append(ev, ValidationError{
-					Field: field,
-					Err:   fmt.Errorf("validation error for field %s: min %d expected but got %d", field, min, val),
-				})
-			}
+			valErr, e = validateIntMin(field, val, step)
 		case "max":
-			max, err := strconv.ParseInt(step.Param, 10, 64)
-			if err != nil {
-				return nil, err
-			}
-			if val > max {
-				ev = append(ev, ValidationError{
-					Field: field,
-					Err:   fmt.Errorf("validation error for field %s: max %d expected but got %d", field, max, val),
-				})
-			}
+			valErr, e = validateIntMax(field, val, step)
 		case "in":
-			set := strings.Split(step.Param, ",")
-			found := false
-			for _, strI := range set {
-				i, err := strconv.ParseInt(strI, 10, 64)
-				if err != nil {
-					return nil, err
-				}
-				found = i == val
-				if found {
-					break
-				}
-			}
-			if !found {
-				ev = append(ev, ValidationError{
-					Field: field,
-					Err: fmt.Errorf(
-						"validation error for field %s: %d expected to be in {%s} but actually doesn't",
-						field, val, step.Param,
-					),
-				})
-			}
+			valErr, e = validateIntIn(field, val, step)
 		default:
 			return nil, ErrUnsupportedValidationRule
+		}
+		if e != nil {
+			return nil, e
+		}
+		if valErr != nil {
+			ev = append(ev, *valErr)
 		}
 	}
 
 	return ev, nil
 }
 
-func validateString(field string, val string, steps []validationStep) (ev ValidationErrors, e error) {
+func validateString(field string, value reflect.Value, steps []validationStep) (ev ValidationErrors, e error) {
 	ev = make(ValidationErrors, 0, 3)
+	val := value.Convert(strType).String()
 
 	for _, step := range steps {
+		var valErr *ValidationError
 		switch step.Op {
 		case "len":
-			l, err := strconv.ParseInt(step.Param, 10, 64)
-			if err != nil {
-				return nil, err
-			}
-			lv := int64(len(val))
-			if lv != l {
-				ev = append(ev, ValidationError{
-					Field: field,
-					Err:   fmt.Errorf("validation error for field %s: len %d expected but got %d", field, l, lv),
-				})
-			}
+			valErr, e = validateStrLen(field, val, step)
 		case "regexp":
-			re, err := regexp.Compile(step.Param)
-			if err != nil {
-				return nil, err
-			}
-			if !re.MatchString(val) {
-				ev = append(ev, ValidationError{
-					Field: field,
-					Err: fmt.Errorf(
-						"validation error for field %s: expected '%s' match to '%s' but actually doesn't",
-						field, val, step.Param,
-					),
-				})
-			}
+			valErr, e = validateStrRegex(field, val, step)
 		case "in":
-			set := strings.Split(step.Param, ",")
-			found := false
-			for _, str := range set {
-				found = str == val
-				if found {
-					break
-				}
-			}
-			if !found {
-				ev = append(ev, ValidationError{
-					Field: field,
-					Err: fmt.Errorf(
-						"validation error for field %s: %s expected to be in {%s} but actually doesn't",
-						field, val, step.Param,
-					),
-				})
-			}
+			valErr, e = validateStrIn(field, val, step)
 		default:
 			return nil, ErrUnsupportedValidationRule
+		}
+		if e != nil {
+			return nil, e
+		}
+		if valErr != nil {
+			ev = append(ev, *valErr)
 		}
 	}
 
 	return ev, nil
 }
 
-func Validate(v interface{}) error {
+func validateSlice(field string, value reflect.Value, steps []validationStep) (ev ValidationErrors, e error) {
+	ev = make(ValidationErrors, 0, 3)
+	e = ErrUnsupportedType
+	for i := 0; i < value.Len(); i++ {
+		var valErr ValidationErrors
+
+		if value.Index(i).Type().ConvertibleTo(int64Type) {
+			valErr, e = validateInt(field, value.Index(i), steps)
+		} else if value.Index(i).Type().ConvertibleTo(strType) {
+			valErr, e = validateString(field, value.Index(i), steps)
+		}
+
+		if e != nil {
+			return nil, e
+		}
+		ev = append(ev, valErr...)
+	}
+	return ev, nil
+}
+
+func Validate(v interface{}) (e error) {
 	val := reflect.ValueOf(v)
 	t := val.Type()
 	ve := make(ValidationErrors, 0, 10)
@@ -189,41 +156,21 @@ func Validate(v interface{}) error {
 		}
 
 		fv := val.Field(i)
-
-		switch f.Type.String() {
-		case "int":
-			valErr, e := validateInt(f.Name, fv.Int(), steps)
-			if e != nil {
-				return err
-			}
-			ve = append(ve, valErr...)
-		case "string":
-			valErr, e := validateString(f.Name, fv.String(), steps)
-			if e != nil {
-				return err
-			}
-			ve = append(ve, valErr...)
-		case "[]int":
-			sliceI, _ := fv.Interface().([]int64)
-
-			for _, val := range sliceI {
-				valErr, e := validateInt(f.Name, val, steps)
-				if e != nil {
-					return err
-				}
-				ve = append(ve, valErr...)
-			}
-		case "[]string":
-			sliceI, _ := fv.Interface().([]string)
-
-			for _, val := range sliceI {
-				valErr, e := validateString(f.Name, val, steps)
-				if e != nil {
-					return err
-				}
-				ve = append(ve, valErr...)
-			}
+		var valErrs ValidationErrors
+		switch {
+		case f.Type.ConvertibleTo(int64Type):
+			valErrs, e = validateInt(f.Name, fv, steps)
+		case f.Type.ConvertibleTo(strType):
+			valErrs, e = validateString(f.Name, fv, steps)
+		case f.Type.Kind() == reflect.Slice:
+			valErrs, e = validateSlice(f.Name, fv, steps)
+		default:
+			e = ErrUnsupportedType
 		}
+		if e != nil {
+			return err
+		}
+		ve = append(ve, valErrs...)
 	}
 	return ve
 }
