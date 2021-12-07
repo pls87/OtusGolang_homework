@@ -20,29 +20,26 @@ type validationStep struct {
 	Param string
 }
 
-func parseStep(str string) (validationStep, error) {
-	parts := strings.Split(str, ":")
-	if (len(parts)) != 2 {
-		return validationStep{}, ErrFormat
+func parseStep(str string) (*validationStep, error) {
+	if parts := strings.Split(str, ":"); len(parts) == 2 {
+		return &validationStep{
+			Op:    parts[0],
+			Param: parts[1],
+		}, nil
 	}
-	op, param := strings.Trim(parts[0], " \t"), strings.Trim(parts[1], " \t")
-	op, param = strings.ToLower(op), strings.ToLower(param)
 
-	return validationStep{
-		Op:    op,
-		Param: param,
-	}, nil
+	return nil, ErrFormat
 }
 
 func parseTag(str string) ([]validationStep, error) {
 	stepsStr := strings.Split(str, "|")
 	steps := make([]validationStep, 0, len(stepsStr))
 	for _, v := range stepsStr {
-		step, err := parseStep(v)
-		if err != nil {
+		if step, err := parseStep(v); err == nil {
+			steps = append(steps, *step)
+		} else {
 			return nil, err
 		}
-		steps = append(steps, step)
 	}
 
 	return steps, nil
@@ -65,63 +62,47 @@ func (v ValidationErrors) Error() string {
 	return builder.String()
 }
 
-func validateInt(field string, value reflect.Value, steps []validationStep) (ev ValidationErrors, e error) {
-	ev = make(ValidationErrors, 0, 3)
+func validateInt(field string, value reflect.Value, steps []validationStep) (ValidationErrors, error) {
+	ev := make(ValidationErrors, 0, 3)
 	val := value.Convert(int64Type).Int()
 
 	for _, step := range steps {
-		var valErr *ValidationError
-		switch step.Op {
-		case "min":
-			valErr, e = validateIntMin(field, val, step)
-		case "max":
-			valErr, e = validateIntMax(field, val, step)
-		case "in":
-			valErr, e = validateIntIn(field, val, step)
-		default:
+		if validator := intValidators[step.Op]; validator != nil {
+			if valErr, e := validator(field, val, step); e == nil && valErr != nil {
+				ev = append(ev, *valErr)
+			} else {
+				return nil, e
+			}
+		} else {
 			return nil, ErrUnsupportedValidationRule
-		}
-		if e != nil {
-			return nil, e
-		}
-		if valErr != nil {
-			ev = append(ev, *valErr)
 		}
 	}
 
 	return ev, nil
 }
 
-func validateString(field string, value reflect.Value, steps []validationStep) (ev ValidationErrors, e error) {
-	ev = make(ValidationErrors, 0, 3)
+func validateString(field string, value reflect.Value, steps []validationStep) (ValidationErrors, error) {
+	ev := make(ValidationErrors, 0, 3)
 	val := value.Convert(strType).String()
 
 	for _, step := range steps {
-		var valErr *ValidationError
-		switch step.Op {
-		case "len":
-			valErr, e = validateStrLen(field, val, step)
-		case "regexp":
-			valErr, e = validateStrRegex(field, val, step)
-		case "in":
-			valErr, e = validateStrIn(field, val, step)
-		default:
+		if validator := stringValidators[step.Op]; validator != nil {
+			if valErr, e := validator(field, val, step); e == nil && valErr != nil {
+				ev = append(ev, *valErr)
+			} else {
+				return nil, e
+			}
+		} else {
 			return nil, ErrUnsupportedValidationRule
-		}
-		if e != nil {
-			return nil, e
-		}
-		if valErr != nil {
-			ev = append(ev, *valErr)
 		}
 	}
 
 	return ev, nil
 }
 
-func validateSlice(field string, value reflect.Value, steps []validationStep) (ev ValidationErrors, e error) {
-	ev = make(ValidationErrors, 0, 3)
-	e = ErrUnsupportedType
+func validateSlice(field string, value reflect.Value, steps []validationStep) (ValidationErrors, error) {
+	ev := make(ValidationErrors, 0, 3)
+	e := ErrUnsupportedType
 	for i := 0; i < value.Len(); i++ {
 		var valErr ValidationErrors
 
@@ -145,14 +126,15 @@ func Validate(v interface{}) (e error) {
 	ve := make(ValidationErrors, 0, 10)
 	for i := 0; i < t.NumField(); i++ {
 		f := t.Field(i)
-		validateTagStr := f.Tag.Get("validate")
-		if validateTagStr == "" {
+		var tagStr string
+		var steps []validationStep
+
+		if tagStr = f.Tag.Get("validate"); tagStr == "" {
 			continue
 		}
 
-		steps, err := parseTag(validateTagStr)
-		if err != nil {
-			return err
+		if steps, e = parseTag(tagStr); e != nil {
+			return e
 		}
 
 		fv := val.Field(i)
@@ -168,7 +150,7 @@ func Validate(v interface{}) (e error) {
 			e = ErrUnsupportedType
 		}
 		if e != nil {
-			return err
+			return e
 		}
 		ve = append(ve, valErrs...)
 	}

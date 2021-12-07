@@ -7,6 +7,23 @@ import (
 	"strings"
 )
 
+type (
+	validateIntFunc = func(field string, val int64, step validationStep) (*ValidationError, error)
+	validateStrFunc = func(field string, val string, step validationStep) (*ValidationError, error)
+)
+
+var intValidators = map[string]validateIntFunc{
+	"max": validateIntMax,
+	"min": validateIntMin,
+	"in":  validateIntIn,
+}
+
+var stringValidators = map[string]validateStrFunc{
+	"len":    validateStrLen,
+	"regexp": validateStrRegexp,
+	"in":     validateStrIn,
+}
+
 func validateIntMax(field string, val int64, step validationStep) (*ValidationError, error) {
 	max, err := strconv.ParseInt(step.Param, 0, 64)
 	if err != nil {
@@ -77,7 +94,7 @@ func validateStrLen(field string, val string, step validationStep) (*ValidationE
 	return nil, nil
 }
 
-func validateStrRegex(field string, val string, step validationStep) (*ValidationError, error) {
+func validateStrRegexp(field string, val string, step validationStep) (*ValidationError, error) {
 	re, err := regexp.Compile(step.Param)
 	if err != nil {
 		return nil, err
