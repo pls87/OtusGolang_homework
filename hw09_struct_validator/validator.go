@@ -85,20 +85,20 @@ func (v ValidationError) Error() string {
 	var message string
 	switch v.Step.Op {
 	case "min":
-		message = fmt.Sprintf("min %s expected but got %d", v.Step.Param, v.Val)
+		message = fmt.Sprintf("min %s expected, but got %d", v.Step.Param, v.Val)
 	case "max":
-		message = fmt.Sprintf("max %s expected but got %d", v.Step.Param, v.Val)
+		message = fmt.Sprintf("max %s expected, but got %d", v.Step.Param, v.Val)
 	case "len":
 		message = fmt.Sprintf("length for '%s' mismatched, %s expected", v.Val, v.Step.Param)
 	case "regexp":
 		message = fmt.Sprintf("'%s' doesn't match to regexp '%s'", v.Val, v.Step.Param)
 	case "in":
-		message = fmt.Sprintf("%v expected to be in {%s} but actually doesn't", v.Val, v.Step.Param)
+		message = fmt.Sprintf("%v expected to be in {%s}, but actually doesn't", v.Val, v.Step.Param)
 	default:
 		message = "unknown operation"
 	}
 
-	return fmt.Sprintf("Field '%s': validator: '%s', message: %s", v.Field, v.Step.Op, message)
+	return fmt.Sprintf("Field '%s': rule: '%s', message: %s", v.Field, v.Step.Op, message)
 }
 
 type ValidationErrors []ValidationError
@@ -141,16 +141,17 @@ func callValidator(f string, v interface{}, steps []ValidationStep, vSet validat
 	ev := make(ValidationErrors, 0, 3)
 
 	for _, step := range steps {
-		if validator := vSet[step.Op]; validator != nil {
-			if valErr, e := validator(f, v, step); e == nil {
-				if valErr != nil {
-					ev = append(ev, *valErr)
-				}
-			} else {
-				return nil, e
-			}
-		} else {
+		validator := vSet[step.Op]
+		if validator == nil {
 			return nil, ErrUnsupportedValidationRule
+		}
+
+		valErr, e := validator(f, v, step)
+		if e != nil {
+			return nil, e
+		}
+		if valErr != nil {
+			ev = append(ev, *valErr)
 		}
 	}
 

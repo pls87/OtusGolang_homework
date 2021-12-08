@@ -72,7 +72,6 @@ func validateStrRegexp(field string, val interface{}, step ValidationStep) (*Val
 	return nil, nil
 }
 
-// nolint:unparam
 func validateStrIn(field string, val interface{}, step ValidationStep) (*ValidationError, error) {
 	return validateIn(field, val, step, strType)
 }
