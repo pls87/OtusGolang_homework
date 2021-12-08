@@ -7,53 +7,53 @@ import (
 	"strings"
 )
 
-type (
-	validateIntFunc = func(field string, val int64, step validationStep) (*ValidationError, error)
-	validateStrFunc = func(field string, val string, step validationStep) (*ValidationError, error)
-)
+type validateFunc = func(field string, val interface{}, step validationStep) (*ValidationError, error)
 
-var intValidators = map[string]validateIntFunc{
+type validatorSet map[string]validateFunc
+
+var intValidators = validatorSet{
 	"max": validateIntMax,
 	"min": validateIntMin,
 	"in":  validateIntIn,
 }
 
-var stringValidators = map[string]validateStrFunc{
+var stringValidators = validatorSet{
 	"len":    validateStrLen,
 	"regexp": validateStrRegexp,
 	"in":     validateStrIn,
 }
 
-func validateIntMax(field string, val int64, step validationStep) (*ValidationError, error) {
+func validateIntMax(field string, val interface{}, step validationStep) (*ValidationError, error) {
 	max, err := strconv.ParseInt(step.Param, 0, 64)
 	if err != nil {
 		return nil, err
 	}
-	if val > max {
+	if v := val.(int64); v > max {
 		return &ValidationError{
 			Field: field,
-			Err:   fmt.Errorf("validation error - max %d expected but got %d", max, val),
+			Err:   fmt.Errorf("validation error - max %d expected but got %d", max, v),
 		}, nil
 	}
 	return nil, nil
 }
 
-func validateIntMin(field string, val int64, step validationStep) (*ValidationError, error) {
+func validateIntMin(field string, val interface{}, step validationStep) (*ValidationError, error) {
 	min, err := strconv.ParseInt(step.Param, 0, 64)
 	if err != nil {
 		return nil, err
 	}
-	if val < min {
+	if v := val.(int64); v < min {
 		return &ValidationError{
 			Field: field,
-			Err:   fmt.Errorf("validation error - min %d expected but got %d", min, val),
+			Err:   fmt.Errorf("validation error - min %d expected but got %d", min, v),
 		}, nil
 	}
 	return nil, nil
 }
 
-func validateIntIn(field string, val int64, step validationStep) (*ValidationError, error) {
+func validateIntIn(field string, val interface{}, step validationStep) (*ValidationError, error) {
 	set := strings.Split(step.Param, ",")
+	v := val.(int64)
 	found := false
 	for _, strI := range set {
 		strI = strings.Trim(strI, " \t")
@@ -61,7 +61,7 @@ func validateIntIn(field string, val int64, step validationStep) (*ValidationErr
 		if err != nil {
 			return nil, err
 		}
-		found = i == val
+		found = i == v
 		if found {
 			break
 		}
@@ -71,20 +71,21 @@ func validateIntIn(field string, val int64, step validationStep) (*ValidationErr
 			Field: field,
 			Err: fmt.Errorf(
 				"validation error - %d expected to be in {%s} but actually doesn't",
-				val, step.Param,
+				v, step.Param,
 			),
 		}, nil
 	}
 	return nil, nil
 }
 
-func validateStrLen(field string, val string, step validationStep) (*ValidationError, error) {
+func validateStrLen(field string, val interface{}, step validationStep) (*ValidationError, error) {
 	l, err := strconv.ParseInt(step.Param, 0, 64)
 	if err != nil {
 		return nil, err
 	}
+	v := val.(string)
 
-	if lv := int64(len(val)); lv != l {
+	if lv := int64(len(v)); lv != l {
 		return &ValidationError{
 			Field: field,
 			Err:   fmt.Errorf("validation error - len %d expected but got %d", l, lv),
@@ -94,17 +95,18 @@ func validateStrLen(field string, val string, step validationStep) (*ValidationE
 	return nil, nil
 }
 
-func validateStrRegexp(field string, val string, step validationStep) (*ValidationError, error) {
+func validateStrRegexp(field string, val interface{}, step validationStep) (*ValidationError, error) {
 	re, err := regexp.Compile(step.Param)
 	if err != nil {
 		return nil, err
 	}
-	if !re.MatchString(val) {
+	v := val.(string)
+	if !re.MatchString(v) {
 		return &ValidationError{
 			Field: field,
 			Err: fmt.Errorf(
 				"validation error - expected '%s' match to '%s' but actually doesn't",
-				val, step.Param,
+				v, step.Param,
 			),
 		}, nil
 	}
@@ -112,11 +114,12 @@ func validateStrRegexp(field string, val string, step validationStep) (*Validati
 }
 
 // nolint:unparam
-func validateStrIn(field string, val string, step validationStep) (*ValidationError, error) {
+func validateStrIn(field string, val interface{}, step validationStep) (*ValidationError, error) {
 	set := strings.Split(step.Param, ",")
+	v := val.(string)
 	found := false
 	for _, str := range set {
-		found = str == val
+		found = str == v
 		if found {
 			break
 		}
@@ -126,7 +129,7 @@ func validateStrIn(field string, val string, step validationStep) (*ValidationEr
 			Field: field,
 			Err: fmt.Errorf(
 				"validation error - '%s' expected to be in {%s} but actually doesn't",
-				val, step.Param,
+				v, step.Param,
 			),
 		}, nil
 	}

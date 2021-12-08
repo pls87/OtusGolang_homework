@@ -37,6 +37,7 @@ func parseTag(str string) ([]validationStep, error) {
 	for _, v := range stepsStr {
 		if step, err := parseStep(v); err == nil {
 			steps = append(steps, *step)
+			continue
 		} else {
 			return nil, err
 		}
@@ -62,97 +63,70 @@ func (v ValidationErrors) Error() string {
 	return builder.String()
 }
 
-func validateInt(field string, value reflect.Value, steps []validationStep) (ValidationErrors, error) {
-	ev := make(ValidationErrors, 0, 3)
-	val := value.Convert(int64Type).Int()
-
-	for _, step := range steps {
-		if validator := intValidators[step.Op]; validator != nil {
-			if valErr, e := validator(field, val, step); e == nil && valErr != nil {
-				ev = append(ev, *valErr)
-			} else {
-				return nil, e
-			}
-		} else {
-			return nil, ErrUnsupportedValidationRule
-		}
+func validateValue(field string, value reflect.Value, steps []validationStep) (ValidationErrors, error) {
+	switch {
+	case value.Type().ConvertibleTo(int64Type):
+		return callValidator(field, value.Convert(int64Type).Int(), steps, intValidators)
+	case value.Type().ConvertibleTo(strType):
+		return callValidator(field, value.Convert(strType).String(), steps, stringValidators)
+	case value.Type().Kind() == reflect.Slice:
+		return validateSlice(field, value, steps)
+	default:
+		return nil, ErrUnsupportedType
 	}
-
-	return ev, nil
-}
-
-func validateString(field string, value reflect.Value, steps []validationStep) (ValidationErrors, error) {
-	ev := make(ValidationErrors, 0, 3)
-	val := value.Convert(strType).String()
-
-	for _, step := range steps {
-		if validator := stringValidators[step.Op]; validator != nil {
-			if valErr, e := validator(field, val, step); e == nil && valErr != nil {
-				ev = append(ev, *valErr)
-			} else {
-				return nil, e
-			}
-		} else {
-			return nil, ErrUnsupportedValidationRule
-		}
-	}
-
-	return ev, nil
 }
 
 func validateSlice(field string, value reflect.Value, steps []validationStep) (ValidationErrors, error) {
 	ev := make(ValidationErrors, 0, 3)
-	e := ErrUnsupportedType
 	for i := 0; i < value.Len(); i++ {
-		var valErr ValidationErrors
-
-		if value.Index(i).Type().ConvertibleTo(int64Type) {
-			valErr, e = validateInt(field, value.Index(i), steps)
-		} else if value.Index(i).Type().ConvertibleTo(strType) {
-			valErr, e = validateString(field, value.Index(i), steps)
-		}
-
-		if e != nil {
+		if valErr, e := validateValue(field, value.Index(i), steps); e == nil {
+			ev = append(ev, valErr...)
+		} else {
 			return nil, e
 		}
-		ev = append(ev, valErr...)
 	}
 	return ev, nil
 }
 
-func Validate(v interface{}) (e error) {
+func callValidator(f string, v interface{}, steps []validationStep, vSet validatorSet) (ValidationErrors, error) {
+	ev := make(ValidationErrors, 0, 3)
+
+	for _, step := range steps {
+		if validator := vSet[step.Op]; validator != nil {
+			if valErr, e := validator(f, v, step); e == nil && valErr != nil {
+				ev = append(ev, *valErr)
+			} else {
+				return nil, e
+			}
+		} else {
+			return nil, ErrUnsupportedValidationRule
+		}
+	}
+
+	return ev, nil
+}
+
+func Validate(v interface{}) error {
 	val := reflect.ValueOf(v)
 	t := val.Type()
 	ve := make(ValidationErrors, 0, 10)
 	for i := 0; i < t.NumField(); i++ {
 		f := t.Field(i)
-		var tagStr string
-		var steps []validationStep
 
+		var tagStr string
 		if tagStr = f.Tag.Get("validate"); tagStr == "" {
 			continue
 		}
 
-		if steps, e = parseTag(tagStr); e != nil {
+		if steps, e := parseTag(tagStr); e == nil {
+			if valErr, err := validateValue(f.Name, val.Field(i), steps); e == nil {
+				ve = append(ve, valErr...)
+			} else {
+				return err
+			}
+		} else {
 			return e
 		}
-
-		fv := val.Field(i)
-		var valErrs ValidationErrors
-		switch {
-		case f.Type.ConvertibleTo(int64Type):
-			valErrs, e = validateInt(f.Name, fv, steps)
-		case f.Type.ConvertibleTo(strType):
-			valErrs, e = validateString(f.Name, fv, steps)
-		case f.Type.Kind() == reflect.Slice:
-			valErrs, e = validateSlice(f.Name, fv, steps)
-		default:
-			e = ErrUnsupportedType
-		}
-		if e != nil {
-			return e
-		}
-		ve = append(ve, valErrs...)
 	}
 	return ve
 }
