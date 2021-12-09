@@ -9,9 +9,11 @@ import (
 )
 
 var (
-	ErrFormat                    = errors.New("invalid validation tag")
-	ErrUnsupportedValidationRule = errors.New("invalid validation rule")
-	ErrUnsupportedType           = errors.New("invalid validation type")
+	ErrValidationFormat          = errors.New("invalid validation")
+	ErrValidationTag             = fmt.Errorf("%w tag", ErrValidationFormat)
+	ErrUnsupportedValidationRule = fmt.Errorf("%w rule", ErrValidationFormat)
+	ErrUnsupportedType           = fmt.Errorf("%w type", ErrValidationFormat)
+	ErrValidationNotPassed       = errors.New("validation not passed")
 )
 
 var int64Type, strType = reflect.TypeOf((int64)(0)), reflect.TypeOf("")
@@ -30,12 +32,12 @@ func (vs ValidationStep) SliceOf(t reflect.Type) ([]interface{}, error) {
 	res := make([]interface{}, 0, 5)
 	var elem interface{}
 	var err error
-	for _, strI := range set {
+	for _, str := range set {
 		switch t {
 		case int64Type:
-			elem, err = strconv.ParseInt(strI, 0, 64)
+			elem, err = strconv.ParseInt(str, 0, 64)
 		default:
-			elem, err = strI, nil
+			elem, err = str, nil
 		}
 
 		if err != nil {
@@ -46,15 +48,15 @@ func (vs ValidationStep) SliceOf(t reflect.Type) ([]interface{}, error) {
 	return res, nil
 }
 
-func parseStep(str string) (*ValidationStep, error) {
+func parseStep(str string) (*ValidationStep, bool) {
 	if parts := strings.Split(str, ":"); len(parts) == 2 {
 		return &ValidationStep{
 			Op:    parts[0],
 			Param: parts[1],
-		}, nil
+		}, true
 	}
 
-	return nil, ErrFormat
+	return nil, false
 }
 
 func parseTag(str string) ([]ValidationStep, error) {
@@ -64,11 +66,11 @@ func parseTag(str string) ([]ValidationStep, error) {
 	stepsStr := strings.Split(str, "|")
 	steps := make([]ValidationStep, 0, len(stepsStr))
 	for _, v := range stepsStr {
-		if step, err := parseStep(v); err == nil {
+		if step, ok := parseStep(v); ok {
 			steps = append(steps, *step)
 			continue
 		} else {
-			return nil, err
+			return nil, fmt.Errorf("'%s' is %w", str, ErrValidationTag)
 		}
 	}
 
@@ -79,23 +81,36 @@ type ValidationError struct {
 	Field string
 	Step  ValidationStep
 	Val   interface{}
+	Err   error
+}
+
+func (v ValidationError) Unwrap() error {
+	return v.Err
 }
 
 func (v ValidationError) Error() string {
+	if v.Err == nil {
+		return ""
+	}
+
+	if !errors.Is(v.Err, ErrValidationNotPassed) {
+		return v.Err.Error()
+	}
+
 	var message string
 	switch v.Step.Op {
 	case "min":
-		message = fmt.Sprintf("min %s expected, but got %d", v.Step.Param, v.Val)
+		message = fmt.Sprintf("%v - min %s expected, but got %d", v.Err, v.Step.Param, v.Val)
 	case "max":
-		message = fmt.Sprintf("max %s expected, but got %d", v.Step.Param, v.Val)
+		message = fmt.Sprintf("%v - max %s expected, but got %d", v.Err, v.Step.Param, v.Val)
 	case "len":
-		message = fmt.Sprintf("length for '%s' mismatched, %s expected", v.Val, v.Step.Param)
+		message = fmt.Sprintf("%v - length for '%s' mismatched, %s expected", v.Err, v.Val, v.Step.Param)
 	case "regexp":
-		message = fmt.Sprintf("'%s' doesn't match to regexp '%s'", v.Val, v.Step.Param)
+		message = fmt.Sprintf("%v - '%s' doesn't match to regexp '%s'", v.Err, v.Val, v.Step.Param)
 	case "in":
-		message = fmt.Sprintf("%v expected to be in {%s}, but actually doesn't", v.Val, v.Step.Param)
+		message = fmt.Sprintf("%v - %v expected to be in {%s}, but actually doesn't", v.Err, v.Val, v.Step.Param)
 	default:
-		message = "unknown operation"
+		message = fmt.Sprintf("%v - unknown operation", v.Err)
 	}
 
 	return fmt.Sprintf("Field '%s': rule: '%s', message: %s", v.Field, v.Step.Op, message)
@@ -112,7 +127,7 @@ func (v ValidationErrors) Error() string {
 	return builder.String()
 }
 
-func validateValue(field string, value reflect.Value, steps []ValidationStep) (ValidationErrors, error) {
+func validateValue(field string, value reflect.Value, steps []ValidationStep) ValidationErrors {
 	switch {
 	case value.Type().ConvertibleTo(int64Type):
 		return callValidator(field, value.Convert(int64Type).Int(), steps, intValidators)
@@ -121,44 +136,48 @@ func validateValue(field string, value reflect.Value, steps []ValidationStep) (V
 	case value.Type().Kind() == reflect.Slice:
 		return validateSlice(field, value, steps)
 	default:
-		return nil, ErrUnsupportedType
-	}
-}
-
-func validateSlice(field string, value reflect.Value, steps []ValidationStep) (ValidationErrors, error) {
-	ev := make(ValidationErrors, 0, 3)
-	for i := 0; i < value.Len(); i++ {
-		if valErr, e := validateValue(field, value.Index(i), steps); e == nil {
-			ev = append(ev, valErr...)
-		} else {
-			return nil, e
+		return ValidationErrors{
+			ValidationError{
+				Field: field, Step: ValidationStep{}, Val: nil,
+				Err: fmt.Errorf("%w %s", ErrUnsupportedType, value.Type()),
+			},
 		}
 	}
-	return ev, nil
 }
 
-func callValidator(f string, v interface{}, steps []ValidationStep, vSet validatorSet) (ValidationErrors, error) {
+func validateSlice(field string, value reflect.Value, steps []ValidationStep) ValidationErrors {
+	ev := make(ValidationErrors, 0, 3)
+	for i := 0; i < value.Len(); i++ {
+		if valErr := validateValue(field, value.Index(i), steps); valErr != nil {
+			ev = append(ev, valErr...)
+		}
+	}
+	return ev
+}
+
+func callValidator(f string, v interface{}, steps []ValidationStep, vSet validatorSet) ValidationErrors {
 	ev := make(ValidationErrors, 0, 3)
 
 	for _, step := range steps {
 		validator := vSet[step.Op]
 		if validator == nil {
-			return nil, ErrUnsupportedValidationRule
+			ev = append(ev, ValidationError{
+				Field: f, Step: step, Val: v,
+				Err: fmt.Errorf("%w '%s' for field '%s'", ErrUnsupportedValidationRule, step.Op, f),
+			})
+			continue
 		}
 
-		valErr, e := validator(f, v, step)
-		if e != nil {
-			return nil, e
-		}
+		valErr := validator(f, v, step)
 		if valErr != nil {
 			ev = append(ev, *valErr)
 		}
 	}
 
-	return ev, nil
+	return ev
 }
 
-func Validate(v interface{}) error {
+func Validate(v interface{}) ValidationErrors {
 	val := reflect.ValueOf(v)
 	t := val.Type()
 	ve := make(ValidationErrors, 0, 10)
@@ -169,13 +188,11 @@ func Validate(v interface{}) error {
 			if len(steps) == 0 {
 				continue
 			}
-			if valErr, err := validateValue(f.Name, val.Field(i), steps); e == nil {
+			if valErr := validateValue(f.Name, val.Field(i), steps); valErr != nil {
 				ve = append(ve, valErr...)
-			} else {
-				return err
 			}
 		} else {
-			return e
+			ve = append(ve, ValidationError{Field: f.Name, Step: ValidationStep{}, Val: nil, Err: e})
 		}
 	}
 	return ve
