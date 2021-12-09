@@ -12,7 +12,7 @@ type UserRole string
 // Test the function on different structures and other types.
 type (
 	User struct {
-		ID           string `json:"id" validate:"le:36"`
+		ID           string `json:"id" validate:"len:36"`
 		Name         string
 		Age          uint8    `validate:"min:18|max:50"`
 		Email        string   `validate:"regexp:^\\w+@\\w+\\.\\w+$"`
@@ -94,11 +94,11 @@ func TestValidatePositive(t *testing.T) {
 				ValidationError{
 					Field: "ID",
 					Step: ValidationStep{
-						Op:    "le",
+						Op:    "len",
 						Param: "36",
 					},
 					Val: 1,
-					Err: ErrUnsupportedValidationRule,
+					Err: ErrValidationLen,
 				}, ValidationError{
 					Field: "Role",
 					Step: ValidationStep{
@@ -106,7 +106,7 @@ func TestValidatePositive(t *testing.T) {
 						Param: "5",
 					},
 					Val: "Developer",
-					Err: ErrValidationNotPassed,
+					Err: ErrValidationLen,
 				}, ValidationError{
 					Field: "Role",
 					Step: ValidationStep{
@@ -114,7 +114,7 @@ func TestValidatePositive(t *testing.T) {
 						Param: "admin,stuff",
 					},
 					Val: "Developer",
-					Err: ErrValidationNotPassed,
+					Err: ErrValidationIn,
 				}, ValidationError{
 					Field: "Phones",
 					Step: ValidationStep{
@@ -122,7 +122,7 @@ func TestValidatePositive(t *testing.T) {
 						Param: "11",
 					},
 					Val: "1234567890",
-					Err: ErrValidationNotPassed,
+					Err: ErrValidationLen,
 				}, ValidationError{
 					Field: "ChildrenAges",
 					Step: ValidationStep{
@@ -130,7 +130,7 @@ func TestValidatePositive(t *testing.T) {
 						Param: "17",
 					},
 					Val: 21,
-					Err: ErrValidationNotPassed,
+					Err: ErrValidationMax,
 				},
 			},
 		},

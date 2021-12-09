@@ -13,7 +13,13 @@ var (
 	ErrValidationTag             = fmt.Errorf("%w tag", ErrValidationFormat)
 	ErrUnsupportedValidationRule = fmt.Errorf("%w rule", ErrValidationFormat)
 	ErrUnsupportedType           = fmt.Errorf("%w type", ErrValidationFormat)
-	ErrValidationNotPassed       = errors.New("validation not passed")
+
+	ErrValidationFailed = errors.New("validation failed")
+	ErrValidationMin    = fmt.Errorf("%w for validator Min", ErrValidationFailed)
+	ErrValidationMax    = fmt.Errorf("%w for validator Max", ErrValidationFailed)
+	ErrValidationIn     = fmt.Errorf("%w for validator In", ErrValidationFailed)
+	ErrValidationLen    = fmt.Errorf("%w for validator Len", ErrValidationFailed)
+	ErrValidationRegexp = fmt.Errorf("%w for validator Regexp", ErrValidationFailed)
 )
 
 var int64Type, strType = reflect.TypeOf((int64)(0)), reflect.TypeOf("")
@@ -48,15 +54,15 @@ func (vs ValidationStep) SliceOf(t reflect.Type) ([]interface{}, error) {
 	return res, nil
 }
 
-func parseStep(str string) (*ValidationStep, bool) {
+func parseStep(str string) *ValidationStep {
 	if parts := strings.Split(str, ":"); len(parts) == 2 {
 		return &ValidationStep{
 			Op:    parts[0],
 			Param: parts[1],
-		}, true
+		}
 	}
 
-	return nil, false
+	return nil
 }
 
 func parseTag(str string) ([]ValidationStep, error) {
@@ -66,12 +72,11 @@ func parseTag(str string) ([]ValidationStep, error) {
 	stepsStr := strings.Split(str, "|")
 	steps := make([]ValidationStep, 0, len(stepsStr))
 	for _, v := range stepsStr {
-		if step, ok := parseStep(v); ok {
+		if step := parseStep(v); step != nil {
 			steps = append(steps, *step)
 			continue
-		} else {
-			return nil, fmt.Errorf("'%s' is %w", str, ErrValidationTag)
 		}
+		return nil, fmt.Errorf("'%s' is %w", str, ErrValidationTag)
 	}
 
 	return steps, nil
@@ -93,7 +98,7 @@ func (v ValidationError) Error() string {
 		return ""
 	}
 
-	if !errors.Is(v.Err, ErrValidationNotPassed) {
+	if !errors.Is(v.Err, ErrValidationFailed) {
 		return v.Err.Error()
 	}
 

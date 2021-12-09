@@ -28,11 +28,11 @@ func validateIntMax(field string, val interface{}, step ValidationStep) *Validat
 	max, err := strconv.ParseInt(step.Param, 0, 64)
 	if err != nil {
 		e = fmt.Errorf(
-			"%w: field %s, param %s isn't suitable for validator %s",
+			"%w: field %s, Param %s isn't suitable for validator %s",
 			ErrValidationFormat, field, step.Param, step.Op,
 		)
 	} else if v := val.(int64); v > max {
-		e = ErrValidationNotPassed
+		e = ErrValidationMax
 	}
 
 	if e != nil {
@@ -46,11 +46,11 @@ func validateIntMin(field string, val interface{}, step ValidationStep) *Validat
 	var e error
 	if err != nil {
 		e = fmt.Errorf(
-			"%w: field %s, param %s isn't suitable for validator %s",
+			"%w: field %s, Param %s isn't suitable for validator %s",
 			ErrValidationFormat, field, step.Param, step.Op,
 		)
 	} else if v := val.(int64); v < min {
-		e = ErrValidationNotPassed
+		e = ErrValidationMin
 	}
 
 	if e != nil {
@@ -68,11 +68,11 @@ func validateStrLen(field string, val interface{}, step ValidationStep) *Validat
 	var e error
 	if err != nil {
 		e = fmt.Errorf(
-			"%w: field %s, param %s isn't suitable for validator %s",
+			"%w: field %s, Param %s isn't suitable for validator %s",
 			ErrValidationFormat, field, step.Param, step.Op,
 		)
 	} else if lv := int64(len(val.(string))); lv != l {
-		e = ErrValidationNotPassed
+		e = ErrValidationLen
 	}
 
 	if e != nil {
@@ -86,11 +86,11 @@ func validateStrRegexp(field string, val interface{}, step ValidationStep) *Vali
 	re, err := regexp.Compile(step.Param)
 	if err != nil {
 		e = fmt.Errorf(
-			"%w: field %s, param %s isn't suitable for validator %s",
+			"%w: field %s, Param %s isn't suitable for validator %s",
 			ErrValidationFormat, field, step.Param, step.Op,
 		)
 	} else if !re.MatchString(val.(string)) {
-		e = ErrValidationNotPassed
+		e = ErrValidationRegexp
 	}
 
 	if e != nil {
@@ -108,7 +108,7 @@ func validateIn(field string, val interface{}, step ValidationStep, t reflect.Ty
 	set, err := step.SliceOf(t)
 	if err != nil {
 		e = fmt.Errorf(
-			"%w: field %s, param %s isn't suitable for validator %s",
+			"%w: field %s, Param %s isn't suitable for validator %s",
 			ErrValidationFormat, field, step.Param, step.Op,
 		)
 	} else {
@@ -119,7 +119,7 @@ func validateIn(field string, val interface{}, step ValidationStep, t reflect.Ty
 			}
 		}
 		if !found {
-			e = ErrValidationNotPassed
+			e = ErrValidationIn
 		}
 	}
 
