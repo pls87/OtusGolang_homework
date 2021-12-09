@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
-	"strconv"
 	"strings"
 )
 
@@ -22,39 +21,28 @@ var (
 	ErrValidationRegexp = fmt.Errorf("%w for validator Regexp", ErrValidationFailed)
 )
 
-var int64Type, strType = reflect.TypeOf((int64)(0)), reflect.TypeOf("")
-
 type ValidationStep struct {
 	Op    string
 	Param string
 }
 
-func (vs ValidationStep) Int() (int64, error) {
-	return strconv.ParseInt(vs.Param, 0, 64)
+func (vs ValidationStep) value(t reflect.Type) (interface{}, error) {
+	return converters[t](vs.Param)
 }
 
-func (vs ValidationStep) SliceOf(t reflect.Type) ([]interface{}, error) {
-	set := strings.Split(vs.Param, ",")
+func (vs ValidationStep) slice(t reflect.Type) ([]interface{}, error) {
 	res := make([]interface{}, 0, 5)
-	var elem interface{}
-	var err error
-	for _, str := range set {
-		switch t {
-		case int64Type:
-			elem, err = strconv.ParseInt(str, 0, 64)
-		default:
-			elem, err = str, nil
-		}
-
-		if err != nil {
+	for _, str := range strings.Split(vs.Param, ",") {
+		if elem, err := converters[t](str); err == nil {
+			res = append(res, elem)
+		} else {
 			return nil, err
 		}
-		res = append(res, elem)
 	}
 	return res, nil
 }
 
-func parseStep(str string) *ValidationStep {
+func newStep(str string) *ValidationStep {
 	if parts := strings.Split(str, ":"); len(parts) == 2 {
 		return &ValidationStep{
 			Op:    parts[0],
@@ -65,15 +53,15 @@ func parseStep(str string) *ValidationStep {
 	return nil
 }
 
-func parseTag(str string) ([]ValidationStep, error) {
+func newTag(str string) ([]ValidationStep, error) {
 	if str == "" {
 		return []ValidationStep{}, nil
 	}
-	stepsStr := strings.Split(str, "|")
-	steps := make([]ValidationStep, 0, len(stepsStr))
-	for _, v := range stepsStr {
-		if step := parseStep(v); step != nil {
-			steps = append(steps, *step)
+	stepLines := strings.Split(str, "|")
+	steps := make([]ValidationStep, 0, len(stepLines))
+	for _, v := range stepLines {
+		if s := newStep(v); s != nil {
+			steps = append(steps, *s)
 			continue
 		}
 		return nil, fmt.Errorf("'%s' is %w", str, ErrValidationTag)
@@ -133,20 +121,16 @@ func (v ValidationErrors) Error() string {
 }
 
 func validateValue(field string, value reflect.Value, steps []ValidationStep) ValidationErrors {
-	switch {
-	case value.Type().ConvertibleTo(int64Type):
-		return callValidator(field, value.Convert(int64Type).Int(), steps, intValidators)
-	case value.Type().ConvertibleTo(strType):
-		return callValidator(field, value.Convert(strType).String(), steps, stringValidators)
-	case value.Type().Kind() == reflect.Slice:
+	if value.Type().Kind() == reflect.Slice {
 		return validateSlice(field, value, steps)
-	default:
-		return ValidationErrors{
-			ValidationError{
-				Field: field, Step: ValidationStep{}, Val: nil,
-				Err: fmt.Errorf("%w %s", ErrUnsupportedType, value.Type()),
-			},
+	}
+	for _, t := range types {
+		if value.Type().ConvertibleTo(t) {
+			return validate(field, value.Convert(t).Interface(), steps, validatorSets[t])
 		}
+	}
+	return ValidationErrors{
+		ValidationError{Field: field, Err: fmt.Errorf("%w %s", ErrUnsupportedType, value.Type())},
 	}
 }
 
@@ -160,21 +144,16 @@ func validateSlice(field string, value reflect.Value, steps []ValidationStep) Va
 	return ev
 }
 
-func callValidator(f string, v interface{}, steps []ValidationStep, vSet validatorSet) ValidationErrors {
+func validate(f string, v interface{}, steps []ValidationStep, vSet validatorSet) ValidationErrors {
 	ev := make(ValidationErrors, 0, 3)
-
-	for _, step := range steps {
-		validator := vSet[step.Op]
-		if validator == nil {
+	for _, s := range steps {
+		if vf := vSet[s.Op]; vf == nil {
 			ev = append(ev, ValidationError{
-				Field: f, Step: step, Val: v,
-				Err: fmt.Errorf("%w '%s' for field '%s'", ErrUnsupportedValidationRule, step.Op, f),
+				Field: f, Step: s, Val: v,
+				Err: fmt.Errorf("%w '%s' for field '%s'", ErrUnsupportedValidationRule, s.Op, f),
 			})
 			continue
-		}
-
-		valErr := validator(f, v, step)
-		if valErr != nil {
+		} else if valErr := vf(f, v, s); valErr != nil {
 			ev = append(ev, *valErr)
 		}
 	}
@@ -188,16 +167,12 @@ func Validate(v interface{}) ValidationErrors {
 	ve := make(ValidationErrors, 0, 10)
 	for i := 0; i < t.NumField(); i++ {
 		f := t.Field(i)
-
-		if steps, e := parseTag(f.Tag.Get("validate")); e == nil {
-			if len(steps) == 0 {
-				continue
-			}
+		if steps, e := newTag(f.Tag.Get("validate")); e == nil {
 			if valErr := validateValue(f.Name, val.Field(i), steps); valErr != nil {
 				ve = append(ve, valErr...)
 			}
 		} else {
-			ve = append(ve, ValidationError{Field: f.Name, Step: ValidationStep{}, Val: nil, Err: e})
+			ve = append(ve, ValidationError{Field: f.Name, Err: e})
 		}
 	}
 	return ve
