@@ -141,6 +141,7 @@ func TestValidatePositive(t *testing.T) {
 			tt := tt
 
 			validationErrors := Validate(tt.in)
+			// fmt.Println(validationErrors)
 			checkErrorsMatch(t, tt.expectedErr, validationErrors)
 		})
 	}

@@ -82,31 +82,13 @@ func (v ValidationError) Unwrap() error {
 }
 
 func (v ValidationError) Error() string {
-	if v.Err == nil {
-		return ""
-	}
-
 	if !errors.Is(v.Err, ErrValidationFailed) {
 		return v.Err.Error()
 	}
 
-	var message string
-	switch v.Step.Op {
-	case "min":
-		message = fmt.Sprintf("%v - min %s expected, but got %d", v.Err, v.Step.Param, v.Val)
-	case "max":
-		message = fmt.Sprintf("%v - max %s expected, but got %d", v.Err, v.Step.Param, v.Val)
-	case "len":
-		message = fmt.Sprintf("%v - length for '%s' mismatched, %s expected", v.Err, v.Val, v.Step.Param)
-	case "regexp":
-		message = fmt.Sprintf("%v - '%s' doesn't match to regexp '%s'", v.Err, v.Val, v.Step.Param)
-	case "in":
-		message = fmt.Sprintf("%v - %v expected to be in {%s}, but actually doesn't", v.Err, v.Val, v.Step.Param)
-	default:
-		message = fmt.Sprintf("%v - unknown operation", v.Err)
-	}
+	message := fmt.Sprintf("%v - %s %s expected", v.Err, v.Step.Op, v.Step.Param)
 
-	return fmt.Sprintf("Field '%s': rule: '%s', message: %s", v.Field, v.Step.Op, message)
+	return fmt.Sprintf("Field '%s': value:'%v' message: %s", v.Field, v.Val, message)
 }
 
 type ValidationErrors []ValidationError
