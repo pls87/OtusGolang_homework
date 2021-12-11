@@ -24,7 +24,7 @@ var (
 			return strconv.ParseInt(str, 0, 64)
 		},
 	}
-	validatorSets = map[reflect.Type]validatorSet{
+	validators = map[reflect.Type]validatorSet{
 		int64Type: {
 			"max": validateIntMax,
 			"min": validateIntMin,

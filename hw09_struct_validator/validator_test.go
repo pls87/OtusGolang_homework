@@ -1,7 +1,9 @@
 package hw09structvalidator
 
 import (
+	"encoding/json"
 	"errors"
+	"math"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -14,12 +16,13 @@ type (
 	User struct {
 		ID           string `json:"id" validate:"len:36"`
 		Name         string
-		Age          uint8    `validate:"min:18|max:50"`
-		Email        string   `validate:"regexp:^\\w+@\\w+\\.\\w+$"`
-		Role         UserRole `validate:"len:5|in:admin,stuff"`
-		Phones       []string `validate:"len:11"`
-		ChildrenAges []int    `validate:"max:17"`
-		// meta         json.RawMessage
+		Age          uint8           `validate:"min:18|max:50"`
+		Email        string          `validate:"regexp:^\\w+@\\w+\\.\\w+$"`
+		Role         UserRole        `validate:"len:5|in:admin,stuff"`
+		Phones       []string        `validate:"len:11|regexp:^\\+\\d+$"`
+		ChildrenAges []int           `validate:"max:17"`
+		Sex          string          `validate:"in:male|female"` // not tolerant a bit :)
+		meta         json.RawMessage //nolint:structcheck,unused
 	}
 
 	App struct {
@@ -28,13 +31,23 @@ type (
 
 	Token struct {
 		Header    []byte
-		Payload   []byte
+		Payload   []byte `validate:"len:10"`
 		Signature []byte
 	}
 
 	Response struct {
 		Code int    `validate:"in:200,404,500"`
 		Body string `json:"omitempty"`
+	}
+
+	Request struct {
+		Host        string
+		Path        string
+		Port        uint16   `validate:"min:1|max:65535"`
+		Method      string   `validate:"in:GET,POST,PUT,DELETE"`
+		Headers     []string `validate:"regexp:^\\S+:.*$"`
+		Body        string
+		AccessToken Token `validate:"len:10"`
 	}
 )
 
@@ -45,6 +58,7 @@ func lookupForError(ve ValidationError, vErrs ValidationErrors) bool {
 		equal = equal && v.Field == ve.Field
 		equal = equal && v.Step.Op == ve.Step.Op
 		equal = equal && v.Step.Param == ve.Step.Param
+		equal = equal && v.Val == ve.Val
 		equal = equal && errors.Is(ve.Err, v.Err)
 
 		if equal {
@@ -73,64 +87,80 @@ func checkErrorsInclusion(t *testing.T, vErrs1, vErrs2 ValidationErrors) {
 	}
 }
 
-func TestValidatePositive(t *testing.T) {
+func TestValidate(t *testing.T) {
 	tests := []struct {
 		name        string
 		in          interface{}
-		expectedErr ValidationErrors
+		expectedErr error
 	}{
 		{
-			name: "User:case without errors in validation rules format",
-			in: User{
-				ID:           "1",
-				Name:         "Pavel Lysenko",
-				Age:          34,
-				Email:        "pavel@domain.com",
-				Role:         "Developer",
-				Phones:       []string{"1234567890", "23456789012"},
-				ChildrenAges: []int{1, 4, 9, 21},
+			name:        "test working with not struct types",
+			in:          math.Pi,
+			expectedErr: ErrValueIsNotAStruct,
+		}, {
+			name: "Request: test working with unsupported types",
+			in: Request{
+				Host: "google.com", Port: 443, Path: "/search", Method: "GET", Body: "", AccessToken: Token{},
+				Headers: []string{"Content-Type: text/html", "User-Agent: Mozilla 5.0"},
 			},
 			expectedErr: ValidationErrors{
 				ValidationError{
-					Field: "ID",
-					Step: ValidationStep{
-						Op:    "len",
-						Param: "36",
-					},
-					Val: 1,
+					Field: "AccessToken", Err: ErrValidationUnsupportedType,
+				},
+			},
+		}, {
+			name: "Response: test working with other tags",
+			in:   Response{Code: 403, Body: "<HTML></HTML>"},
+			expectedErr: ValidationErrors{
+				ValidationError{
+					Field: "Code", Val: int64(403), Step: ValidationStep{Op: "in", Param: "200,404,500"},
+					Err: ErrValidationIn,
+				},
+			},
+		}, {
+			name:        "App:test successful validation",
+			in:          App{Version: "1.2.3"},
+			expectedErr: ValidationErrors{},
+		}, {
+			name: "Payload:check that []byte will be validated as a string",
+			in:   Token{Payload: []byte("fdght4df6b9")},
+			expectedErr: ValidationErrors{
+				ValidationError{
+					Field: "Payload", Val: "fdght4df6b9", Step: ValidationStep{Op: "len", Param: "10"},
+					Err: ErrValidationLen,
+				},
+			},
+		}, {
+			name: "User:validation case with error in one validation rule format",
+			in: User{
+				ID: "1", Name: "John Doe", Age: 30,
+				Email: "joe_doe@domain.com", Role: "Developer",
+				Phones:       []string{"+123456789", "23456789012"},
+				ChildrenAges: []int{1, 6, 21},
+				Sex:          "male",
+			},
+			expectedErr: ValidationErrors{
+				ValidationError{
+					Field: "ID", Val: "1", Step: ValidationStep{Op: "len", Param: "36"},
 					Err: ErrValidationLen,
 				}, ValidationError{
-					Field: "Role",
-					Step: ValidationStep{
-						Op:    "len",
-						Param: "5",
-					},
-					Val: "Developer",
+					Field: "Role", Step: ValidationStep{Op: "len", Param: "5"}, Val: "Developer",
 					Err: ErrValidationLen,
 				}, ValidationError{
-					Field: "Role",
-					Step: ValidationStep{
-						Op:    "in",
-						Param: "admin,stuff",
-					},
-					Val: "Developer",
+					Field: "Role", Step: ValidationStep{Op: "in", Param: "admin,stuff"}, Val: "Developer",
 					Err: ErrValidationIn,
 				}, ValidationError{
-					Field: "Phones",
-					Step: ValidationStep{
-						Op:    "len",
-						Param: "11",
-					},
-					Val: "1234567890",
+					Field: "Phones", Step: ValidationStep{Op: "len", Param: "11"}, Val: "+123456789",
 					Err: ErrValidationLen,
 				}, ValidationError{
-					Field: "ChildrenAges",
-					Step: ValidationStep{
-						Op:    "max",
-						Param: "17",
-					},
-					Val: 21,
+					Field: "Phones", Step: ValidationStep{Op: "regexp", Param: `^\+\d+$`}, Val: "23456789012",
+					Err: ErrValidationRegexp,
+				}, ValidationError{
+					Field: "ChildrenAges", Step: ValidationStep{Op: "max", Param: "17"}, Val: int64(21),
 					Err: ErrValidationMax,
+				}, ValidationError{
+					Field: "Sex", Val: "male",
+					Err: ErrValidationTag,
 				},
 			},
 		},
@@ -140,9 +170,14 @@ func TestValidatePositive(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			tt := tt
 
-			validationErrors := Validate(tt.in)
-			// fmt.Println(validationErrors)
-			checkErrorsMatch(t, tt.expectedErr, validationErrors)
+			actualErr := Validate(tt.in)
+			var actual, expected ValidationErrors
+			if errors.As(actualErr, &actual) && errors.As(tt.expectedErr, &expected) {
+				checkErrorsMatch(t, expected, actual)
+			} else {
+				require.Truef(t, errors.Is(actualErr, tt.expectedErr),
+					"Expected error %v, but got %v", tt.expectedErr, actualErr)
+			}
 		})
 	}
 }
