@@ -1,10 +1,9 @@
 package hw10programoptimization
 
 import (
+	"bufio"
 	"encoding/json"
-	"fmt"
 	"io"
-	"io/ioutil"
 	"regexp"
 	"strings"
 )
@@ -23,45 +22,52 @@ type DomainStat map[string]int
 
 func GetDomainStat(r io.Reader, domain string) (DomainStat, error) {
 	u, err := getUsers(r)
-	if err != nil {
-		return nil, fmt.Errorf("get users error: %w", err)
-	}
-	return countDomains(u, domain)
+	return countDomains(u, err, domain)
 }
 
-type users [100_000]User
-
-func getUsers(r io.Reader) (result users, err error) {
-	content, err := ioutil.ReadAll(r)
-	if err != nil {
-		return
-	}
-
-	lines := strings.Split(string(content), "\n")
-	for i, line := range lines {
+func getUsers(r io.Reader) (userCh chan User, e chan error) {
+	userCh = make(chan User)
+	e = make(chan error)
+	go func() {
+		scanner := bufio.NewScanner(r)
+		scanner.Split(bufio.ScanLines)
 		var user User
-		if err = json.Unmarshal([]byte(line), &user); err != nil {
-			return
+		for scanner.Scan() {
+			if err := json.Unmarshal([]byte(scanner.Text()), &user); err != nil {
+				continue
+			}
+			userCh <- user
 		}
-		result[i] = user
-	}
-	return
+		e <- scanner.Err()
+
+		close(e)
+		close(userCh)
+	}()
+
+	return userCh, e
 }
 
-func countDomains(u users, domain string) (DomainStat, error) {
+func countDomains(userCh chan User, e chan error, domain string) (DomainStat, error) {
 	result := make(DomainStat)
 
-	for _, user := range u {
-		matched, err := regexp.Match("\\."+domain, []byte(user.Email))
-		if err != nil {
-			return nil, err
-		}
+	for {
+		select {
+		case u := <-userCh:
+			matched, err := regexp.Match("\\."+domain, []byte(u.Email))
+			if err != nil {
+				return nil, err
+			}
 
-		if matched {
-			num := result[strings.ToLower(strings.SplitN(user.Email, "@", 2)[1])]
-			num++
-			result[strings.ToLower(strings.SplitN(user.Email, "@", 2)[1])] = num
+			if matched {
+				num := result[strings.ToLower(strings.SplitN(u.Email, "@", 2)[1])]
+				num++
+				result[strings.ToLower(strings.SplitN(u.Email, "@", 2)[1])] = num
+			}
+		case err := <-e:
+			if err != nil {
+				return nil, err
+			}
+			return result, nil
 		}
 	}
-	return result, nil
 }
