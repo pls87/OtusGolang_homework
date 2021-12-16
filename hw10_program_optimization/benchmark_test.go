@@ -24,7 +24,10 @@ func BenchmarkCaseFromFrozenTest(b *testing.B) {
 		require.NoError(b, err)
 
 		b.StartTimer()
-		GetDomainStat(data, "biz")
+		_, err = GetDomainStat(data, "biz")
+		b.StopTimer()
+		require.NoError(b, err)
+
 		r.Close()
 	}
 }
