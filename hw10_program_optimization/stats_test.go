@@ -10,8 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestGetDomainStat(t *testing.T) {
-	data := `{"Id":1,"Name":"Howard Mendoza","Username":"0Oliver","Email":"aliquid_qui_ea@Browsedrive.gov","Phone":"6-866-899-36-79","Password":"InAQJvsq","Address":"Blackbird Place 25"}
+var testData = `{"Id":1,"Name":"Howard Mendoza","Username":"0Oliver","Email":"aliquid_qui_ea@Browsedrive.gov","Phone":"6-866-899-36-79","Password":"InAQJvsq","Address":"Blackbird Place 25"}
 {"Id":2,"Name":"Jesse Vasquez","Username":"qRichardson","Email":"mLynch@broWsecat.com","Phone":"9-373-949-64-00","Password":"SiZLeNSGn","Address":"Fulton Hill 80"}
 {"Id":3,"Name":"Clarence Olson","Username":"RachelAdams","Email":"RoseSmith@Browsecat.com","Phone":"988-48-97","Password":"71kuz3gA5w","Address":"Monterey Park 39"}
 {"Id":4,"Name":"Gregory Reid","Username":"tButler","Email":"5Moore@Teklist.net","Phone":"520-04-16","Password":"r639qLNu","Address":"Sunfield Park 20"}
@@ -25,8 +24,9 @@ func TestGetDomainStat(t *testing.T) {
 {"Id":112,"Age":18,"Name":"Jane Doe", "Email": "jane@doe.mail.org"}
 <notjson>Someone forgot an XML here =(</notjson>`
 
+func TestGetDomainStat(t *testing.T) {
 	t.Run("find 'mail.org' domain with 2 layers", func(t *testing.T) {
-		result, err := GetDomainStat(bytes.NewBufferString(data), "mail.org")
+		result, err := GetDomainStat(bytes.NewBufferString(testData), "mail.org")
 		require.NoError(t, err)
 		require.Equal(t, DomainStat{
 			"doe.mail.org": 1,
@@ -34,13 +34,13 @@ func TestGetDomainStat(t *testing.T) {
 	})
 
 	t.Run("find 'us' with incorrect email", func(t *testing.T) {
-		result, err := GetDomainStat(bytes.NewBufferString(data), "us")
+		result, err := GetDomainStat(bytes.NewBufferString(testData), "us")
 		require.NoError(t, err)
 		require.Equal(t, DomainStat{}, result)
 	})
 
 	t.Run("find 'ru' with capital case in domain", func(t *testing.T) {
-		result, err := GetDomainStat(bytes.NewBufferString(data), "ru")
+		result, err := GetDomainStat(bytes.NewBufferString(testData), "ru")
 		require.NoError(t, err)
 		require.Equal(t, DomainStat{
 			"mail.ru":   1,
@@ -50,7 +50,7 @@ func TestGetDomainStat(t *testing.T) {
 	})
 
 	t.Run("find 'com'", func(t *testing.T) {
-		result, err := GetDomainStat(bytes.NewBufferString(data), "com")
+		result, err := GetDomainStat(bytes.NewBufferString(testData), "com")
 		require.NoError(t, err)
 		require.Equal(t, DomainStat{
 			"browsecat.com": 2,
@@ -59,13 +59,13 @@ func TestGetDomainStat(t *testing.T) {
 	})
 
 	t.Run("find 'gov'", func(t *testing.T) {
-		result, err := GetDomainStat(bytes.NewBufferString(data), "gov")
+		result, err := GetDomainStat(bytes.NewBufferString(testData), "gov")
 		require.NoError(t, err)
 		require.Equal(t, DomainStat{"browsedrive.gov": 1}, result)
 	})
 
 	t.Run("find 'unknown'", func(t *testing.T) {
-		result, err := GetDomainStat(bytes.NewBufferString(data), "unknown")
+		result, err := GetDomainStat(bytes.NewBufferString(testData), "unknown")
 		require.NoError(t, err)
 		require.Equal(t, DomainStat{}, result)
 	})
