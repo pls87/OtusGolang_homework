@@ -26,9 +26,10 @@ func BenchmarkCaseFromFrozenTest(b *testing.B) {
 		b.StartTimer()
 		_, err = GetDomainStat(data, "biz")
 		b.StopTimer()
-		require.NoError(b, err)
 
-		r.Close()
+		require.NoError(b, err)
+		err = r.Close()
+		require.NoError(b, err)
 	}
 }
 
@@ -39,7 +40,11 @@ func BenchmarkRandomData(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		GetDomainStat(rdr, suffix)
+		b.StartTimer()
+		_, err := GetDomainStat(rdr, suffix)
+		b.StopTimer()
+
+		require.NoError(b, err)
 	}
 }
 
