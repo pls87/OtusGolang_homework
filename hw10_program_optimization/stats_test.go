@@ -25,6 +25,12 @@ var testData = `{"Id":1,"Name":"Howard Mendoza","Username":"0Oliver","Email":"al
 <notjson>Someone forgot an XML here =(</notjson>`
 
 func TestGetDomainStat(t *testing.T) {
+	t.Run("check empty data", func(t *testing.T) {
+		result, err := GetDomainStat(bytes.NewBufferString(""), "org")
+		require.NoError(t, err)
+		require.Equal(t, DomainStat{}, result)
+	})
+
 	t.Run("find 'mail.org' domain with 2 layers", func(t *testing.T) {
 		result, err := GetDomainStat(bytes.NewBufferString(testData), "mail.org")
 		require.NoError(t, err)
