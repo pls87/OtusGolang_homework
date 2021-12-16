@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func BenchmarkRun(b *testing.B) {
+func BenchmarkCaseFromFrozenTest(b *testing.B) {
 	r, _ := zip.OpenReader("testdata/users.dat.zip")
 	data, _ := r.File[0].Open()
 
