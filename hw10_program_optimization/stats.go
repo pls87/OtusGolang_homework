@@ -12,9 +12,10 @@ type DomainStat map[string]int
 func GetDomainStat(r io.Reader, domain string) (DomainStat, error) {
 	result := make(DomainStat)
 	scanner := bufio.NewScanner(r)
+	suffix := "." + domain
 	for scanner.Scan() {
 		email := strings.ToLower(jsoniter.Get(scanner.Bytes(), "Email").ToString())
-		if !strings.HasSuffix(email, "."+domain) {
+		if !strings.HasSuffix(email, suffix) {
 			continue
 		}
 
