@@ -7,9 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/require"
-
 	"github.com/brianvoe/gofakeit/v6"
+	"github.com/stretchr/testify/require"
 )
 
 func BenchmarkCaseFromFrozenTest(b *testing.B) {
