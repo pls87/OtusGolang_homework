@@ -7,6 +7,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/brianvoe/gofakeit/v6"
 )
 
@@ -15,8 +17,13 @@ func BenchmarkCaseFromFrozenTest(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		b.StopTimer()
-		r, _ := zip.OpenReader("testdata/users.dat.zip")
-		data, _ := r.File[0].Open()
+
+		// much better to seek start, but zip file does't support this(
+		r, err := zip.OpenReader("testdata/users.dat.zip")
+		require.NoError(b, err)
+		data, err := r.File[0].Open()
+		require.NoError(b, err)
+
 		b.StartTimer()
 		GetDomainStat(data, "biz")
 		r.Close()
@@ -25,17 +32,16 @@ func BenchmarkCaseFromFrozenTest(b *testing.B) {
 
 func BenchmarkRandomData(b *testing.B) {
 	b.ReportAllocs()
+	rdr := strings.NewReader(generateRandomInput(1000))
+	suffix := gofakeit.DomainSuffix()
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		b.StopTimer()
-		rdr := strings.NewReader(generateRandomBuffer(1000))
-		suffix := gofakeit.DomainSuffix()
-		b.StartTimer()
 		GetDomainStat(rdr, suffix)
 	}
 }
 
-func generateRandomBuffer(limit int) string {
+func generateRandomInput(limit int) string {
 	gofakeit.Seed(time.Now().UnixMicro())
 	result := strings.Builder{}
 	for i := 0; i < limit; i++ {
