@@ -25,8 +25,8 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer stop()
 
-	go sending(client, stop)
 	go receiving(client, stop)
+	go sending(client, stop)
 
 	<-ctx.Done()
 }
