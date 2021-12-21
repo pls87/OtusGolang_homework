@@ -36,16 +36,17 @@ func sending(c TelnetClient, stop context.CancelFunc) {
 	if e := c.Send(); e == nil {
 		fmt.Fprintln(os.Stderr, "...EOF")
 	} else {
-		fmt.Printf("sending error: %s\n", e.Error())
+		fmt.Fprintf(os.Stderr, "sending error: %s\n", e.Error())
 	}
 }
 
 func receiving(c TelnetClient, stop context.CancelFunc) {
 	defer stop()
+
 	if e := c.Receive(); e == nil {
 		fmt.Fprintln(os.Stderr, "...Connection was closed by peer")
 	} else {
-		fmt.Printf("receiving error: %s", e.Error())
+		fmt.Fprintf(os.Stderr, "receiving error: %s", e.Error())
 	}
 }
 
