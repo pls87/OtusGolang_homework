@@ -46,6 +46,36 @@ func (s *telnetTestSuite) TestBasicCase() {
 	s.RunTest()
 }
 
+func (s *telnetTestSuite) RunTest() {
+	s.initTest()
+
+	var wg sync.WaitGroup
+	wg.Add(2)
+
+	go func() {
+		defer wg.Done()
+		s.sendMessagesFromClient()
+
+		s.NoError(s.client.Send())
+		s.NoError(s.client.Receive())
+
+		s.checkMessagesToClient()
+	}()
+
+	go func() {
+		defer wg.Done()
+		conn, err := s.listener.Accept()
+		s.NoError(err)
+		s.NotNil(conn)
+		defer func() { s.NoError(conn.Close()) }()
+
+		s.checkMessagesFromClient(conn)
+		s.sendMessagesToClient(conn)
+	}()
+
+	wg.Wait()
+}
+
 func (s *telnetTestSuite) initTest() {
 	s.in = &bytes.Buffer{}
 	s.out = &bytes.Buffer{}
@@ -57,10 +87,26 @@ func (s *telnetTestSuite) initTest() {
 	s.NoError(s.client.Connect())
 }
 
+func (s *telnetTestSuite) sendMessagesFromClient() {
+	s.sendMessages(s.params.messages2Send, s.in)
+}
+
+func (s *telnetTestSuite) sendMessagesToClient(conn net.Conn) {
+	s.sendMessages(s.params.messages2Receive, conn)
+}
+
 func (s *telnetTestSuite) sendMessages(messages []string, w io.Writer) {
 	for _, m := range messages {
 		w.Write([]byte(m + "\n"))
 	}
+}
+
+func (s *telnetTestSuite) checkMessagesFromClient(conn net.Conn) {
+	s.checkMessages(s.params.messages2Send, conn)
+}
+
+func (s *telnetTestSuite) checkMessagesToClient() {
+	s.checkMessages(s.params.messages2Receive, s.out)
 }
 
 func (s *telnetTestSuite) checkMessages(expected []string, r io.Reader) {
@@ -70,36 +116,6 @@ func (s *telnetTestSuite) checkMessages(expected []string, r io.Reader) {
 		s.Equal(expected[i], scanner.Text())
 	}
 	s.NoError(scanner.Err())
-}
-
-func (s *telnetTestSuite) RunTest() {
-	s.initTest()
-
-	var wg sync.WaitGroup
-	wg.Add(2)
-
-	go func() {
-		defer wg.Done()
-		s.sendMessages(s.params.messages2Send, s.in)
-
-		s.NoError(s.client.Send())
-		s.NoError(s.client.Receive())
-
-		s.checkMessages(s.params.messages2Receive, s.out)
-	}()
-
-	go func() {
-		defer wg.Done()
-		conn, err := s.listener.Accept()
-		s.NoError(err)
-		s.NotNil(conn)
-		defer func() { s.NoError(conn.Close()) }()
-
-		s.checkMessages(s.params.messages2Send, conn)
-		s.sendMessages(s.params.messages2Receive, conn)
-	}()
-
-	wg.Wait()
 }
 
 func TestTelnetClient(t *testing.T) {
