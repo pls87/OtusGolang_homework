@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"errors"
+	"fmt"
 	"io"
 	"net"
 	"sync"
@@ -15,7 +16,6 @@ import (
 
 type caseParams struct {
 	timeout          time.Duration
-	address2Listen   string
 	address2Connect  string
 	messages2Send    []string
 	messages2Receive []string
@@ -161,6 +161,7 @@ func (s *telnetTestSuite) connectCheckStatus() {
 
 		var result net.Error
 		s.True(errors.As(s.status.err, &result))
+		fmt.Println(s.status.err)
 		s.True(result.Timeout())
 
 		return
@@ -176,13 +177,8 @@ func (s *telnetTestSuite) initConnections() {
 	s.status.toServerR, s.status.fromClientW = io.Pipe()
 	s.status.toClientR, s.status.fromServerW = io.Pipe()
 
-	address2Listen := s.params.address2Listen
-	if address2Listen == "" {
-		address2Listen = "127.0.0.1:"
-	}
-
 	var err error
-	s.listener, err = net.Listen("tcp", address2Listen)
+	s.listener, err = net.Listen("tcp", "127.0.0.1:")
 	s.NoError(err)
 	s.status.portOpened = true
 
