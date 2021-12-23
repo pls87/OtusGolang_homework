@@ -141,17 +141,17 @@ func (s *telnetTestSuite) connectCheckStatus() {
 	var wg sync.WaitGroup
 	var completed int32
 	wg.Add(1)
-	go func() {
+	go func(c *int32) {
 		defer wg.Done()
 		s.status.err = s.client.Connect()
 		s.status.clientConnected = s.status.err == nil
-		atomic.AddInt32(&completed, 1)
-	}()
+		atomic.AddInt32(c, 1)
+	}(&completed)
 
 	if s.params.waitTimeoutError {
 		s.Eventuallyf(func() bool {
 			return !atomic.CompareAndSwapInt32(&completed, 1, 0)
-		}, s.params.timeout, s.params.timeout-2*time.Second, "")
+		}, s.params.timeout-time.Second, s.params.timeout-2*time.Second, "")
 
 		s.Eventuallyf(func() bool {
 			return atomic.CompareAndSwapInt32(&completed, 1, 1)
