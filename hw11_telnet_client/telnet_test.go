@@ -6,6 +6,7 @@ import (
 	"io"
 	"net"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -138,26 +139,30 @@ func (s *telnetTestSuite) RunTest() {
 
 func (s *telnetTestSuite) connectCheckStatus() {
 	var wg sync.WaitGroup
-
+	var completed int32
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
 		s.status.err = s.client.Connect()
 		s.status.clientConnected = s.status.err == nil
+		atomic.AddInt32(&completed, 1)
 	}()
 
 	if s.params.waitTimeoutError {
 		s.Eventuallyf(func() bool {
-			return s.status.err == nil
+			return !atomic.CompareAndSwapInt32(&completed, 1, 0)
 		}, s.params.timeout, s.params.timeout-2*time.Second, "")
 
 		s.Eventuallyf(func() bool {
-			return s.status.err != nil
+			return atomic.CompareAndSwapInt32(&completed, 1, 1)
 		}, 4*time.Second, time.Second, "")
+
+		wg.Wait()
 
 		var result net.Error
 		s.True(errors.As(s.status.err, &result))
 		s.True(result.Timeout())
+
 		return
 	}
 
