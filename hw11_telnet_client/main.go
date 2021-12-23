@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"net"
 	"os"
 	"os/signal"
 	"strconv"
@@ -62,5 +63,5 @@ func handleParams() (address string, timeout *time.Duration) {
 		log.Panic("Connection port isn't numeric")
 	}
 
-	return fmt.Sprintf("%s:%s", flag.Arg(0), flag.Arg(1)), timeout
+	return net.JoinHostPort(flag.Arg(0), flag.Arg(1)), timeout
 }
