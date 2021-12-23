@@ -73,7 +73,7 @@ func (s *telnetTestSuite) TestSeveralMessagesCase() {
 
 func (s *telnetTestSuite) TestTimeoutCase() {
 	s.params = caseParams{
-		timeout:          7 * time.Second,
+		timeout:          5 * time.Second,
 		address2Connect:  "127.1.0.1:5768",
 		waitTimeoutError: true,
 	}
