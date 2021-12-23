@@ -2,10 +2,8 @@ package main
 
 import (
 	"bufio"
-	"bytes"
 	"errors"
 	"io"
-	"io/ioutil"
 	"net"
 	"sync"
 	"testing"
@@ -26,8 +24,10 @@ type caseParams struct {
 type caseStatus struct {
 	portOpened      bool
 	clientConnected bool
-	in              *bytes.Buffer
-	out             *bytes.Buffer
+	toServerR       *io.PipeReader
+	fromClientW     *io.PipeWriter
+	toClientR       *io.PipeReader
+	fromServerW     *io.PipeWriter
 	err             error
 }
 
@@ -72,7 +72,7 @@ func (s *telnetTestSuite) TestSeveralMessagesCase() {
 
 func (s *telnetTestSuite) TestTimeoutCase() {
 	s.params = caseParams{
-		timeout:          3 * time.Second,
+		timeout:          7 * time.Second,
 		address2Connect:  "127.1.0.1:5768",
 		waitTimeoutError: true,
 	}
@@ -81,29 +81,56 @@ func (s *telnetTestSuite) TestTimeoutCase() {
 }
 
 func (s *telnetTestSuite) RunTest() {
+	conn, err := s.listener.Accept()
+	s.NoError(err)
+	s.NotNil(conn)
+	defer func() { s.NoError(conn.Close()) }()
+
 	var wg sync.WaitGroup
-	wg.Add(2)
+	wg.Add(4)
 
-	go func() {
+	go func() { // send messages from client
 		defer wg.Done()
+		for _, m := range s.params.messages2Send {
+			s.status.fromClientW.Write([]byte(m + "\n"))
+			time.Sleep(time.Second)
+		}
+	}()
 
-		s.sendMessagesFromClient()
+	go func() { // read messages from client
+		defer wg.Done()
+		scanner := bufio.NewScanner(conn)
+		for i := 0; i < len(s.params.messages2Send); i++ {
+			scanner.Scan()
+			s.Equal(s.params.messages2Send[i], scanner.Text())
+		}
+		s.NoError(scanner.Err())
+	}()
 
-		s.NoError(s.client.Send())
-		s.NoError(s.client.Receive())
+	go func() { // send messages from server
+		defer wg.Done()
+		for _, m := range s.params.messages2Receive {
+			conn.Write([]byte(m + "\n"))
+			time.Sleep(time.Second)
+		}
+	}()
 
-		s.checkMessagesToClient()
+	go func() { // read messages from server
+		defer wg.Done()
+		scanner := bufio.NewScanner(s.status.toClientR)
+		for i := 0; i < len(s.params.messages2Receive); i++ {
+			scanner.Scan()
+			s.Equal(s.params.messages2Receive[i], scanner.Text())
+		}
+		s.NoError(scanner.Err())
 	}()
 
 	go func() {
-		defer wg.Done()
-		conn, err := s.listener.Accept()
-		s.NoError(err)
-		s.NotNil(conn)
-		defer func() { s.NoError(conn.Close()) }()
+		s.client.Send()
+	}()
 
-		s.checkMessagesFromClient(conn)
-		s.sendMessagesToClient(conn)
+	go func() {
+		s.client.Receive()
 	}()
 
 	wg.Wait()
@@ -139,10 +166,10 @@ func (s *telnetTestSuite) connectCheckStatus() {
 }
 
 func (s *telnetTestSuite) initConnections() {
-	s.status = caseStatus{
-		in:  &bytes.Buffer{},
-		out: &bytes.Buffer{},
-	}
+	s.status = caseStatus{}
+
+	s.status.toServerR, s.status.fromClientW = io.Pipe()
+	s.status.toClientR, s.status.fromServerW = io.Pipe()
 
 	address2Listen := s.params.address2Listen
 	if address2Listen == "" {
@@ -159,39 +186,8 @@ func (s *telnetTestSuite) initConnections() {
 		address2Connect = s.listener.Addr().String()
 	}
 
-	s.client = NewTelnetClient(address2Connect, s.params.timeout, ioutil.NopCloser(s.status.in), s.status.out)
+	s.client = NewTelnetClient(address2Connect, s.params.timeout, s.status.toServerR, s.status.fromServerW)
 	s.connectCheckStatus()
-}
-
-func (s *telnetTestSuite) sendMessagesFromClient() {
-	s.sendMessages(s.params.messages2Send, s.status.in)
-}
-
-func (s *telnetTestSuite) sendMessagesToClient(conn net.Conn) {
-	s.sendMessages(s.params.messages2Receive, conn)
-}
-
-func (s *telnetTestSuite) sendMessages(messages []string, w io.Writer) {
-	for _, m := range messages {
-		w.Write([]byte(m + "\n"))
-	}
-}
-
-func (s *telnetTestSuite) checkMessagesFromClient(conn net.Conn) {
-	s.checkMessages(s.params.messages2Send, conn)
-}
-
-func (s *telnetTestSuite) checkMessagesToClient() {
-	s.checkMessages(s.params.messages2Receive, s.status.out)
-}
-
-func (s *telnetTestSuite) checkMessages(expected []string, r io.Reader) {
-	scanner := bufio.NewScanner(r)
-	for i := 0; i < len(expected); i++ {
-		scanner.Scan()
-		s.Equal(expected[i], scanner.Text())
-	}
-	s.NoError(scanner.Err())
 }
 
 func TestTelnetClient(t *testing.T) {
