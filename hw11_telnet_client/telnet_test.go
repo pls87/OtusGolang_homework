@@ -3,82 +3,73 @@ package main
 import (
 	"bufio"
 	"errors"
-	"fmt"
 	"io"
 	"net"
+	"os"
 	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
 
-type caseParams struct {
-	timeout          time.Duration
-	address2Connect  string
+type params struct {
 	messages2Send    []string
 	messages2Receive []string
-	waitTimeoutError bool
 }
 
-type caseStatus struct {
-	portOpened      bool
-	clientConnected bool
-	toServerR       *io.PipeReader
-	fromClientW     *io.PipeWriter
-	toClientR       *io.PipeReader
-	fromServerW     *io.PipeWriter
-	err             error
+type pipes struct {
+	toServerR   *io.PipeReader
+	fromClientW *io.PipeWriter
+	toClientR   *io.PipeReader
+	fromServerW *io.PipeWriter
 }
 
 type telnetTestSuite struct {
 	suite.Suite
-	params   caseParams
-	status   caseStatus
+	params   params
+	pipes    pipes
 	listener net.Listener
 	client   TelnetClient
 }
 
+func (s *telnetTestSuite) SetupTest() {
+	s.pipes = pipes{}
+
+	s.pipes.toServerR, s.pipes.fromClientW = io.Pipe()
+	s.pipes.toClientR, s.pipes.fromServerW = io.Pipe()
+
+	var err error
+	s.listener, err = net.Listen("tcp", "127.0.0.1:")
+	s.NoError(err)
+
+	s.client = NewTelnetClient(s.listener.Addr().String(), 10*time.Second, s.pipes.toServerR, s.pipes.fromServerW)
+	s.NoError(s.client.Connect())
+}
+
 func (s *telnetTestSuite) TearDownTest() {
-	if s.status.portOpened {
-		s.NoError(s.listener.Close())
-	}
-	if s.status.clientConnected {
-		s.NoError(s.client.Close())
-	}
+	s.NoError(s.listener.Close())
+	s.NoError(s.client.Close())
 }
 
 func (s *telnetTestSuite) TestBasicCase() {
-	s.params = caseParams{
-		timeout:          10 * time.Second,
+	s.params = params{
 		messages2Send:    []string{"hello"},
 		messages2Receive: []string{"world"},
 	}
 
-	s.initConnections()
 	s.RunTest()
 }
 
 func (s *telnetTestSuite) TestSeveralMessagesCase() {
-	s.params = caseParams{
-		timeout:          10 * time.Second,
+	s.params = params{
 		messages2Send:    []string{"hello", "cruel", "world"},
 		messages2Receive: []string{"bye-bye", "calm", "heaven"},
 	}
 
-	s.initConnections()
 	s.RunTest()
-}
-
-func (s *telnetTestSuite) TestTimeoutCase() {
-	s.params = caseParams{
-		timeout:          5 * time.Second,
-		address2Connect:  "127.0.0.2:5768",
-		waitTimeoutError: true,
-	}
-
-	s.initConnections()
 }
 
 func (s *telnetTestSuite) RunTest() {
@@ -93,7 +84,7 @@ func (s *telnetTestSuite) RunTest() {
 	go func() { // send messages from client
 		defer wg.Done()
 		for _, m := range s.params.messages2Send {
-			s.status.fromClientW.Write([]byte(m + "\n"))
+			s.pipes.fromClientW.Write([]byte(m + "\n"))
 			time.Sleep(time.Second)
 		}
 	}()
@@ -118,7 +109,7 @@ func (s *telnetTestSuite) RunTest() {
 
 	go func() { // read messages from server
 		defer wg.Done()
-		scanner := bufio.NewScanner(s.status.toClientR)
+		scanner := bufio.NewScanner(s.pipes.toClientR)
 		for i := 0; i < len(s.params.messages2Receive); i++ {
 			scanner.Scan()
 			s.Equal(s.params.messages2Receive[i], scanner.Text())
@@ -137,60 +128,33 @@ func (s *telnetTestSuite) RunTest() {
 	wg.Wait()
 }
 
-func (s *telnetTestSuite) connectCheckStatus() {
-	var wg sync.WaitGroup
-	var completed int32
-	wg.Add(1)
-	go func(c *int32) {
-		defer wg.Done()
-		s.status.err = s.client.Connect()
-		s.status.clientConnected = s.status.err == nil
-		atomic.AddInt32(c, 1)
-	}(&completed)
-
-	if s.params.waitTimeoutError {
-		s.Eventuallyf(func() bool {
-			return !atomic.CompareAndSwapInt32(&completed, 1, 0)
-		}, s.params.timeout-time.Second, s.params.timeout-2*time.Second, "")
-
-		s.Eventuallyf(func() bool {
-			return atomic.CompareAndSwapInt32(&completed, 1, 1)
-		}, 4*time.Second, time.Second, "")
-
-		wg.Wait()
-
-		var result net.Error
-		s.True(errors.As(s.status.err, &result))
-		fmt.Println(s.status.err)
-		s.True(result.Timeout())
-
-		return
-	}
-
-	wg.Wait()
-	s.True(s.status.clientConnected)
-}
-
-func (s *telnetTestSuite) initConnections() {
-	s.status = caseStatus{}
-
-	s.status.toServerR, s.status.fromClientW = io.Pipe()
-	s.status.toClientR, s.status.fromServerW = io.Pipe()
-
-	var err error
-	s.listener, err = net.Listen("tcp", "127.0.0.1:")
-	s.NoError(err)
-	s.status.portOpened = true
-
-	address2Connect := s.params.address2Connect
-	if address2Connect == "" {
-		address2Connect = s.listener.Addr().String()
-	}
-
-	s.client = NewTelnetClient(address2Connect, s.params.timeout, s.status.toServerR, s.status.fromServerW)
-	s.connectCheckStatus()
-}
-
 func TestTelnetClient(t *testing.T) {
 	suite.Run(t, new(telnetTestSuite))
+}
+
+func TestTelnetClientTimeout(t *testing.T) {
+	client := NewTelnetClient("1.1.1.1:1234", 3*time.Second, os.Stdin, os.Stdout)
+	var wg sync.WaitGroup
+	var completed int32
+	var err error
+	wg.Add(1)
+	go func(c *int32, e *error) {
+		defer wg.Done()
+		*e = client.Connect()
+		atomic.AddInt32(c, 1)
+	}(&completed, &err)
+
+	require.Eventuallyf(t, func() bool {
+		return !atomic.CompareAndSwapInt32(&completed, 1, 0)
+	}, 3*time.Second, 2*time.Second, "")
+
+	require.Eventuallyf(t, func() bool {
+		return atomic.CompareAndSwapInt32(&completed, 1, 1)
+	}, 3*time.Second, 2*time.Second, "")
+
+	wg.Wait()
+
+	var result net.Error
+	require.True(t, errors.As(err, &result))
+	require.True(t, result.Timeout())
 }
