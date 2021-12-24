@@ -85,7 +85,7 @@ func (s *telnetTestSuite) RunTest() {
 		defer wg.Done()
 		for _, m := range s.params.messages2Send {
 			s.pipes.fromClientW.Write([]byte(m + "\n"))
-			time.Sleep(time.Second)
+			time.Sleep(100 * time.Millisecond)
 		}
 	}()
 
@@ -155,6 +155,6 @@ func TestTelnetClientTimeout(t *testing.T) {
 	wg.Wait()
 
 	var result net.Error
-	require.True(t, errors.As(err, &result))
-	require.True(t, result.Timeout())
+	require.Truef(t, errors.As(err, &result), "Expected net.Error, but got %v", err)
+	require.Truef(t, result.Timeout(), "Expected timeout error but got %s", result.Error())
 }
