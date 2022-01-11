@@ -1,4 +1,4 @@
-package cmd
+package run
 
 import (
 	"context"
@@ -7,8 +7,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/run/config"
-
+	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/config"
 	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/app"
 	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/logger"
 	internalhttp "github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/server/http"
@@ -28,7 +27,7 @@ var (
 			logg := logger.New(cfg.Logger.Level)
 
 			storage := memorystorage.New()
-			calendar := app.New(logg, storage)
+			calendar := app.New(logg, storage, cfg)
 
 			server := internalhttp.NewServer(logg, calendar)
 
@@ -67,5 +66,5 @@ func init() {
 	var cfgFile string
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file")
 
-	cfg = config.Init(cfgFile)
+	cfg = config.New(cfgFile)
 }

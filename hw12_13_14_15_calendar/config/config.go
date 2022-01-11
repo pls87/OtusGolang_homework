@@ -8,15 +8,13 @@ import (
 
 type Config struct {
 	Logger LoggerConf
-	// TODO
 }
 
 type LoggerConf struct {
 	Level string
-	// TODO
 }
 
-func Init(cfgFile string) Config {
+func New(cfgFile string) Config {
 	cfg := Config{}
 	if cfgFile != "" {
 		viper.SetConfigFile(cfgFile)
@@ -33,5 +31,3 @@ func Init(cfgFile string) Config {
 
 	return cfg
 }
-
-// TODO
