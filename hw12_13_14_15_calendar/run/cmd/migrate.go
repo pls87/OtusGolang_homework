@@ -1,9 +1,7 @@
 package run
 
 import (
-	"log"
-
-	"github.com/pressly/goose/v3"
+	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/migrations"
 	"github.com/spf13/cobra"
 )
 
@@ -16,19 +14,6 @@ var migrateCmd = &cobra.Command{
 	Short: "Migrates data in sql storage",
 	Long:  `<Long version desc>`,
 	Run: func(cmd *cobra.Command, args []string) {
-		if cfg.Storage.Type != "sql" {
-			return
-		}
-
-		db, err := goose.OpenDBWithDriver(cfg.Storage.Driver, cfg.Storage.ConnString)
-		if err != nil {
-			log.Fatalf("goose: failed to open DB: %v\n", err)
-		}
-
-		defer db.Close()
-
-		if err := goose.Run("up", db, "../migrations"); err != nil {
-			log.Printf("goose up: %v", err)
-		}
+		migrations.Migrate(cfg.Storage)
 	},
 }
