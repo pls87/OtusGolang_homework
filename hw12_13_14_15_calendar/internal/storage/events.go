@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-const MaxDuration = time.Second*1<<63 - 1
+const MaxDuration = time.Nanosecond * (1<<63 - 1)
 
 type EventIterator interface {
 	Next() error

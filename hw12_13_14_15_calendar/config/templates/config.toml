@@ -1,5 +1,7 @@
 [logger]
-level = "INFO"
+level = "dfdsf"
 
-# TODO
-# ...
+[storage]
+type = "sql"
+driver = "postgres"
+conn = "user=calendar_user password=pass4calendarusr dbname=calendar_db sslmode=disable"

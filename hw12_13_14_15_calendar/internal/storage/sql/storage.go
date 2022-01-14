@@ -30,7 +30,6 @@ func (s *SQLStorage) Events() storage.EventRepository {
 }
 
 func (s *SQLStorage) Connect(ctx context.Context) error {
-	//"postgres", "user=calendar_user password=pass4calendarusr dbname=calendar_db sslmode=disable"
 	db, err := sqlx.ConnectContext(ctx, s.cfg.Driver, s.cfg.ConnString)
 	if err == nil {
 		s.db = db
