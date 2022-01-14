@@ -4,8 +4,9 @@ import (
 	"context"
 	"sync"
 
+	abstractstorage "github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/storage/abstract"
+
 	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/config"
-	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/storage"
 )
 
 type MemoryStorage struct {
@@ -23,7 +24,7 @@ func New(cfg config.StorageConf) *MemoryStorage {
 	}
 }
 
-func (s *MemoryStorage) Events() storage.EventRepository {
+func (s *MemoryStorage) Events() abstractstorage.EventRepository {
 	return &s.events
 }
 

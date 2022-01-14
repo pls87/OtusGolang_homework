@@ -2,6 +2,7 @@ package run
 
 import (
 	"context"
+	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/storage"
 	"os"
 	"os/signal"
 	"syscall"
@@ -11,9 +12,6 @@ import (
 	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/app"
 	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/logger"
 	internalhttp "github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/server/http"
-	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/storage"
-	memorystorage "github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/storage/memory"
-	sqlstorage "github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/storage/sql"
 	"github.com/spf13/cobra"
 )
 
@@ -28,7 +26,7 @@ var (
 		Run: func(cmd *cobra.Command, args []string) {
 			logg := logger.New(cfg.Logger.Level)
 
-			storage := newStorage(cfg.Storage)
+			storage := storage.New(cfg.Storage)
 			calendar := app.New(logg, storage, cfg)
 
 			server := internalhttp.NewServer(logg, calendar)
@@ -83,15 +81,4 @@ func init() {
 
 func beforeRun() {
 	cfg = config.New(cfgFile)
-}
-
-func newStorage(cfg config.StorageConf) storage.Storage {
-	switch cfg.Type {
-	case "sql":
-		return sqlstorage.New(cfg)
-	case "memory":
-		return memorystorage.New(cfg)
-	default:
-		return memorystorage.New(cfg)
-	}
 }

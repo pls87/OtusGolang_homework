@@ -2,19 +2,19 @@ package app
 
 import (
 	"context"
+	abstractstorage "github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/storage/abstract"
 
 	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/config"
-	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/storage"
 	"github.com/sirupsen/logrus"
 )
 
 type App struct { // TODO
 	logger  *logrus.Logger
-	storage storage.Storage
+	storage abstractstorage.Storage
 	cfg     config.Config
 }
 
-func New(logger *logrus.Logger, storage storage.Storage, cfg config.Config) *App {
+func New(logger *logrus.Logger, storage abstractstorage.Storage, cfg config.Config) *App {
 	return &App{logger, storage, cfg}
 }
 
