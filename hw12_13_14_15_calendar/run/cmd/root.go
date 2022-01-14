@@ -7,8 +7,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/migrations"
-
 	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/config"
 	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/app"
 	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/logger"
@@ -85,10 +83,6 @@ func init() {
 
 func beforeRun() {
 	cfg = config.New(cfgFile)
-
-	if cfg.Storage.Type == "sql" {
-		migrations.Migrate(cfg.Storage)
-	}
 }
 
 func newStorage(cfg config.StorageConf) storage.Storage {
