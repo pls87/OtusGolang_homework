@@ -18,7 +18,7 @@ func upCreateEvents(tx *sql.Tx) error {
     	"start"         timestamptz    NOT NULL,
     	"duration"      interval       NOT NULL,
     	"notify_before" interval       NOT NULL,
-    	"desc"          text           NOT NULL,
+    	"description"   text           NOT NULL,
     	"user_id"       integer        NOT NULL,
     	CONSTRAINT "events_ID" PRIMARY KEY ("ID")
 	);
