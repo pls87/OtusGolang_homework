@@ -2,7 +2,6 @@ package run
 
 import (
 	"context"
-	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/storage"
 	"os"
 	"os/signal"
 	"syscall"
@@ -12,6 +11,7 @@ import (
 	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/app"
 	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/logger"
 	internalhttp "github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/server/http"
+	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/storage"
 	"github.com/spf13/cobra"
 )
 
@@ -55,7 +55,7 @@ var (
 			if err := storage.Connect(ctx); err != nil {
 				logg.Error("failed to connect to storage: " + err.Error())
 				cancel()
-				os.Exit(1) //nolint:gocritic
+				os.Exit(1)
 			}
 
 			logg.Info("calendar is running...")
@@ -63,7 +63,7 @@ var (
 			if err := server.Start(ctx); err != nil {
 				logg.Error("failed to start http server: " + err.Error())
 				cancel()
-				os.Exit(1) //nolint:gocritic
+				os.Exit(1)
 			}
 		},
 	}

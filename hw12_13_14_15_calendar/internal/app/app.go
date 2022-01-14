@@ -2,9 +2,9 @@ package app
 
 import (
 	"context"
-	abstractstorage "github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/storage/abstract"
 
 	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/config"
+	abstractstorage "github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/storage/abstract"
 	"github.com/sirupsen/logrus"
 )
 
