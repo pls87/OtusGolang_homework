@@ -13,7 +13,7 @@ type MemoryEventExpression struct {
 	mu *sync.RWMutex
 }
 
-func (ee MemoryEventExpression) Execute(ctx context.Context, page int) *abstractstorage.EventIterator {
+func (ee MemoryEventExpression) Execute(ctx context.Context) abstractstorage.EventIterator {
 	return nil
 }
 
@@ -21,12 +21,12 @@ type MemoryEventRepository struct {
 	mu *sync.RWMutex
 }
 
-func (ee *MemoryEventRepository) All(ctx context.Context, buffer []models.Event) {
+func (ee *MemoryEventRepository) All(ctx context.Context) (abstractstorage.EventIterator, error) {
 	// TODO implement me
 	panic("implement me")
 }
 
-func (ee *MemoryEventRepository) One(ctx context.Context, id models.ID) models.Event {
+func (ee *MemoryEventRepository) One(ctx context.Context, id models.ID) (models.Event, error) {
 	// TODO implement me
 	panic("implement me")
 }
@@ -47,7 +47,9 @@ func (ee *MemoryEventRepository) Delete(ctx context.Context, e models.Event) err
 }
 
 func (ee *MemoryEventRepository) Where() abstractstorage.EventExpression {
-	return MemoryEventExpression{
+	res := MemoryEventExpression{
 		mu: ee.mu,
 	}
+
+	return &res
 }

@@ -7,15 +7,15 @@ type ID uint64
 const MaxDuration = time.Nanosecond * (1<<63 - 1)
 
 type Timeframe struct {
-	Start    time.Time
-	Duration time.Duration
+	Start    time.Time     `db:"start"`
+	Duration time.Duration `db:"duration"`
 }
 
 type Event struct {
 	Timeframe
-	ID           ID
-	Title        string
-	UserID       ID
-	NotifyBefore time.Duration
-	Desc         string
+	ID           ID            `db:"ID"`
+	Title        string        `db:"title"`
+	UserID       ID            `db:"user_id"`
+	NotifyBefore time.Duration `db:"notify_before"`
+	Desc         string        `db:"description"`
 }

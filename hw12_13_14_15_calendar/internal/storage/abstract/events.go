@@ -8,15 +8,14 @@ import (
 )
 
 type EventIterator interface {
-	Next() error
-	Finished() bool
-	Buffer() []models.Event
+	Next() bool
+	Current() (models.Event, error)
 }
 
 type EventRepository interface {
-	All(ctx context.Context, buffer []models.Event)
+	All(ctx context.Context) (EventIterator, error)
 	Where() EventExpression
-	One(ctx context.Context, id models.ID) models.Event
+	One(ctx context.Context, id models.ID) (models.Event, error)
 	Create(ctx context.Context, e models.Event) (added models.Event, err error)
 	Update(ctx context.Context, e models.Event) error
 	Delete(ctx context.Context, e models.Event) error
@@ -35,31 +34,31 @@ type EventExpression interface {
 	StartsBefore(d time.Time) EventExpression
 	StartsLast(d time.Duration) EventExpression
 	Intersects(tf models.Timeframe) EventExpression
-	Execute(ctx context.Context, page int) *EventIterator
+	Execute(ctx context.Context) EventIterator
 }
 
-func (ee BasicEventExpression) Execute(_ context.Context, _ int) *EventIterator {
+func (ee *BasicEventExpression) Execute(_ context.Context) EventIterator {
 	panic("Abstract method called")
 }
 
-func (ee BasicEventExpression) User(id models.ID) EventExpression {
+func (ee *BasicEventExpression) User(id models.ID) EventExpression {
 	ee.userID = id
-	return &ee
+	return ee
 }
 
-func (ee BasicEventExpression) StartsIn(tf models.Timeframe) EventExpression {
+func (ee *BasicEventExpression) StartsIn(tf models.Timeframe) EventExpression {
 	ee.starts = tf
-	return &ee
+	return ee
 }
 
-func (ee BasicEventExpression) StartsLater(d time.Time) EventExpression {
+func (ee *BasicEventExpression) StartsLater(d time.Time) EventExpression {
 	return ee.StartsIn(models.Timeframe{
 		Start:    d,
 		Duration: models.MaxDuration,
 	})
 }
 
-func (ee BasicEventExpression) StartsBefore(d time.Time) EventExpression {
+func (ee *BasicEventExpression) StartsBefore(d time.Time) EventExpression {
 	minDate := time.Unix(0, 0)
 	return ee.StartsIn(models.Timeframe{
 		Start:    minDate,
@@ -67,15 +66,15 @@ func (ee BasicEventExpression) StartsBefore(d time.Time) EventExpression {
 	})
 }
 
-func (ee BasicEventExpression) StartsLast(d time.Duration) EventExpression {
+func (ee *BasicEventExpression) StartsLast(d time.Duration) EventExpression {
 	return ee.StartsIn(models.Timeframe{
 		Start:    time.Now().Add(-d),
 		Duration: d,
 	})
 }
 
-func (ee BasicEventExpression) Intersects(tf models.Timeframe) EventExpression {
+func (ee *BasicEventExpression) Intersects(tf models.Timeframe) EventExpression {
 	ee.intersection = tf
 
-	return &ee
+	return ee
 }
