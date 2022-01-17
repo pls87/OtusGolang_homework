@@ -22,9 +22,9 @@ type EventRepository interface {
 }
 
 type BasicEventExpression struct {
-	userID       models.ID
-	starts       models.Timeframe
-	intersection models.Timeframe
+	UserID       models.ID
+	Starts       models.Timeframe
+	Intersection models.Timeframe
 }
 
 type EventExpression interface {
@@ -34,20 +34,20 @@ type EventExpression interface {
 	StartsBefore(d time.Time) EventExpression
 	StartsLast(d time.Duration) EventExpression
 	Intersects(tf models.Timeframe) EventExpression
-	Execute(ctx context.Context) EventIterator
+	Execute(ctx context.Context) (EventIterator, error)
 }
 
-func (ee *BasicEventExpression) Execute(_ context.Context) EventIterator {
+func (ee *BasicEventExpression) Execute(_ context.Context) (EventIterator, error) {
 	panic("Abstract method called")
 }
 
 func (ee *BasicEventExpression) User(id models.ID) EventExpression {
-	ee.userID = id
+	ee.UserID = id
 	return ee
 }
 
 func (ee *BasicEventExpression) StartsIn(tf models.Timeframe) EventExpression {
-	ee.starts = tf
+	ee.Starts = tf
 	return ee
 }
 
@@ -74,7 +74,7 @@ func (ee *BasicEventExpression) StartsLast(d time.Duration) EventExpression {
 }
 
 func (ee *BasicEventExpression) Intersects(tf models.Timeframe) EventExpression {
-	ee.intersection = tf
+	ee.Intersection = tf
 
 	return ee
 }

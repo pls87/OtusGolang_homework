@@ -11,6 +11,10 @@ type Timeframe struct {
 	Duration time.Duration `db:"duration"`
 }
 
+func (t *Timeframe) End() time.Time {
+	return t.Start.Add(t.Duration)
+}
+
 type Event struct {
 	Timeframe
 	ID           ID            `db:"ID"`

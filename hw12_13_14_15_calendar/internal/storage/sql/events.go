@@ -2,6 +2,8 @@ package sqlstorage
 
 import (
 	"context"
+	"fmt"
+	"strings"
 
 	"github.com/jmoiron/sqlx"
 	abstractstorage "github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/storage/abstract"
@@ -27,8 +29,38 @@ func (s *SQLEventIterator) Current() (models.Event, error) {
 	return ev, e
 }
 
-func (ee *SQLEventExpression) Execute(ctx context.Context) abstractstorage.EventIterator {
-	return nil
+func (ee *SQLEventExpression) Execute(ctx context.Context) (abstractstorage.EventIterator, error) {
+	clauseBuilder := make([]string, 0, 3)
+	if ee.UserID > 0 {
+		clauseBuilder = append(clauseBuilder, fmt.Sprintf("(user_id=%d)", ee.UserID))
+	}
+	if !ee.Starts.Start.IsZero() {
+		clauseBuilder = append(clauseBuilder,
+			fmt.Sprintf("(start>=%s AND start<=%s)", ee.Starts.Start, ee.Starts.End()),
+		)
+	}
+
+	if !ee.Intersection.Start.IsZero() {
+		clauseBuilder = append(clauseBuilder,
+			fmt.Sprintf("((start>=%s AND start<=%s) OR (start + duration >= %s AND start + duration <= %s))",
+				ee.Intersection.Start, ee.Intersection.End(),
+				ee.Intersection.Start, ee.Intersection.End(),
+			),
+		)
+	}
+
+	whereClause := strings.Join(clauseBuilder, " AND ")
+
+	if whereClause != "" {
+		whereClause = "WHERE " + whereClause
+	}
+
+	rows, err := ee.db.QueryxContext(ctx, `SELECT * FROM "events" ?`, whereClause)
+	if err != nil {
+		return nil, err
+	}
+
+	return &SQLEventIterator{rows}, nil
 }
 
 type SQLEventRepository struct {
@@ -40,7 +72,7 @@ func (s *SQLEventRepository) Attach(db *sqlx.DB) {
 }
 
 func (s *SQLEventRepository) All(ctx context.Context) (abstractstorage.EventIterator, error) {
-	rows, err := s.db.QueryxContext(ctx, "SELECT * FROM events")
+	rows, err := s.db.QueryxContext(ctx, `SELECT * FROM "events"`)
 	if err != nil {
 		return nil, err
 	}
@@ -50,7 +82,7 @@ func (s *SQLEventRepository) All(ctx context.Context) (abstractstorage.EventIter
 
 func (s *SQLEventRepository) One(ctx context.Context, id models.ID) (models.Event, error) {
 	var ev models.Event
-	row := s.db.QueryRowxContext(ctx, "SELECT * FROM events WHERE id=%d", id)
+	row := s.db.QueryRowxContext(ctx, `SELECT * FROM events WHERE id=%d`, id)
 
 	if row.Err() != nil {
 		return ev, row.Err()
