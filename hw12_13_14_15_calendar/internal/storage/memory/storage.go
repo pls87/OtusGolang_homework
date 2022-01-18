@@ -17,9 +17,11 @@ type MemoryStorage struct {
 func New(cfg config.StorageConf) *MemoryStorage {
 	m := sync.RWMutex{}
 	return &MemoryStorage{
-		events: MemoryEventRepository{},
-		cfg:    cfg,
-		mu:     &m,
+		events: MemoryEventRepository{
+			mu: &m,
+		},
+		cfg: cfg,
+		mu:  &m,
 	}
 }
 
