@@ -27,10 +27,12 @@ func (s *MemoryStorage) Events() abstractstorage.EventRepository {
 	return &s.events
 }
 
-func (s *MemoryStorage) Connect(_ context.Context) error {
+func (s *MemoryStorage) Init(_ context.Context) error {
+	s.events.Init()
+
 	return nil
 }
 
-func (s *MemoryStorage) Close() error {
+func (s *MemoryStorage) Destroy() error {
 	return nil
 }

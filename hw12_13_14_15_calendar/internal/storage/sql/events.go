@@ -29,6 +29,23 @@ func (s *SQLEventIterator) Current() (models.Event, error) {
 	return ev, e
 }
 
+func (s *SQLEventIterator) Complete() error {
+	return s.rows.Close()
+}
+
+func (s *SQLEventIterator) ToArray() ([]models.Event, error) {
+	res := make([]models.Event, 0, 10)
+	var ev models.Event
+	for s.rows.Next() {
+		e := s.rows.StructScan(&ev)
+		if e == nil {
+			res = append(res, ev)
+		}
+	}
+
+	return res, nil
+}
+
 func (ee *SQLEventExpression) Execute(ctx context.Context) (abstractstorage.EventIterator, error) {
 	clauseBuilder := make([]string, 0, 3)
 	if ee.UserID > 0 {
@@ -69,6 +86,9 @@ type SQLEventRepository struct {
 
 func (s *SQLEventRepository) Attach(db *sqlx.DB) {
 	s.db = db
+}
+
+func (s *SQLEventRepository) Init() {
 }
 
 func (s *SQLEventRepository) All(ctx context.Context) (abstractstorage.EventIterator, error) {

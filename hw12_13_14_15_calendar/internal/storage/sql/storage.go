@@ -28,7 +28,7 @@ func (s *SQLStorage) Events() abstractstorage.EventRepository {
 	return &s.events
 }
 
-func (s *SQLStorage) Connect(ctx context.Context) error {
+func (s *SQLStorage) Init(ctx context.Context) error {
 	db, err := sqlx.ConnectContext(ctx, s.cfg.Driver, s.cfg.ConnString)
 	if err == nil {
 		s.db = db
@@ -37,6 +37,6 @@ func (s *SQLStorage) Connect(ctx context.Context) error {
 	return err
 }
 
-func (s *SQLStorage) Close() error {
+func (s *SQLStorage) Destroy() error {
 	return s.db.Close()
 }

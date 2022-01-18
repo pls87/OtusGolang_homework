@@ -41,7 +41,7 @@ var (
 				ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
 				defer cancel()
 
-				if err := storage.Close(); err != nil {
+				if err := storage.Destroy(); err != nil {
 					logg.Error("failed to close storage connection: " + err.Error())
 				}
 
@@ -52,7 +52,7 @@ var (
 
 			logg.Info("connecting to storage...")
 
-			if err := storage.Connect(ctx); err != nil {
+			if err := storage.Init(ctx); err != nil {
 				logg.Error("failed to connect to storage: " + err.Error())
 				cancel()
 				os.Exit(1)

@@ -10,9 +10,12 @@ import (
 type EventIterator interface {
 	Next() bool
 	Current() (models.Event, error)
+	ToArray() ([]models.Event, error)
+	Complete() error
 }
 
 type EventRepository interface {
+	Init()
 	All(ctx context.Context) (EventIterator, error)
 	Where() EventExpression
 	One(ctx context.Context, id models.ID) (models.Event, error)

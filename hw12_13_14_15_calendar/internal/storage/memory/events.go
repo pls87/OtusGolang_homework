@@ -2,53 +2,145 @@ package memorystorage
 
 import (
 	"context"
+	"errors"
 	"sync"
 
 	abstractstorage "github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/storage/abstract"
 	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/storage/models"
 )
 
-type MemoryEventExpression struct {
-	abstractstorage.BasicEventExpression
-	mu *sync.RWMutex
+type MemoryEventIterator struct {
+	index int
+	items []models.Event
+	mu    *sync.RWMutex
 }
 
-func (ee MemoryEventExpression) Execute(ctx context.Context) abstractstorage.EventIterator {
+func (s *MemoryEventIterator) Next() bool {
+	s.index++
+	return s.index < len(s.items)
+}
+
+func (s *MemoryEventIterator) Current() (models.Event, error) {
+	if s.index < len(s.items) {
+		return s.items[s.index], nil
+	}
+	return models.Event{}, errors.New("iterator is finished")
+}
+
+func (s *MemoryEventIterator) ToArray() ([]models.Event, error) {
+	return s.items, nil
+}
+
+func (s *MemoryEventIterator) Complete() error {
 	return nil
 }
 
+type MemoryEventExpression struct {
+	abstractstorage.BasicEventExpression
+	mu   *sync.RWMutex
+	data *map[models.ID]models.Event
+}
+
+func (ee MemoryEventExpression) Execute(_ context.Context) (abstractstorage.EventIterator, error) {
+	ee.mu.Lock()
+	defer ee.mu.Unlock()
+	events := make([]models.Event, 0, 10)
+	for _, v := range *ee.data {
+		if ee.CheckEvent(v) {
+			events = append(events, v)
+		}
+	}
+	return &MemoryEventIterator{
+		mu:    ee.mu,
+		items: events,
+	}, nil
+}
+
+func (ee MemoryEventExpression) CheckEvent(e models.Event) bool {
+	if ee.UserID > 0 && e.UserID != ee.UserID {
+		return false
+	}
+	if !ee.Starts.Start.IsZero() && !(e.Start.After(ee.Starts.Start) && e.Start.Before(ee.Starts.End())) {
+		return false
+	}
+
+	if !ee.Intersection.Start.IsZero() && !((e.Start.After(ee.Starts.Start) && e.Start.Before(ee.Starts.End())) ||
+		(e.Timeframe.End().After(ee.Intersection.Start) && e.Timeframe.End().Before(ee.Intersection.End()))) {
+		return false
+	}
+
+	return true
+}
+
 type MemoryEventRepository struct {
-	mu *sync.RWMutex
+	mu      *sync.RWMutex
+	data    map[models.ID]models.Event
+	idIndex models.ID
 }
 
-func (ee *MemoryEventRepository) All(ctx context.Context) (abstractstorage.EventIterator, error) {
-	// TODO implement me
-	panic("implement me")
+func (ee *MemoryEventRepository) Init() {
+	ee.data = make(map[models.ID]models.Event)
 }
 
-func (ee *MemoryEventRepository) One(ctx context.Context, id models.ID) (models.Event, error) {
-	// TODO implement me
-	panic("implement me")
+func (ee *MemoryEventRepository) All(_ context.Context) (abstractstorage.EventIterator, error) {
+	ee.mu.Lock()
+	defer ee.mu.Unlock()
+	events := make([]models.Event, 0, len(ee.data))
+	for _, v := range ee.data {
+		events = append(events, v)
+	}
+	return &MemoryEventIterator{
+		mu:    ee.mu,
+		items: events,
+	}, nil
 }
 
-func (ee *MemoryEventRepository) Create(ctx context.Context, e models.Event) (added models.Event, err error) {
-	// TODO implement me
-	panic("implement me")
+func (ee *MemoryEventRepository) One(_ context.Context, id models.ID) (models.Event, error) {
+	ee.mu.Lock()
+	defer ee.mu.Unlock()
+
+	if val, ok := ee.data[id]; ok {
+		return val, nil
+	}
+
+	return models.Event{}, errors.New("event does not exist")
 }
 
-func (ee *MemoryEventRepository) Update(ctx context.Context, e models.Event) error {
-	// TODO implement me
-	panic("implement me")
+func (ee *MemoryEventRepository) Create(_ context.Context, e models.Event) (added models.Event, err error) {
+	ee.mu.Lock()
+	defer ee.mu.Unlock()
+	e.ID = ee.idIndex + 1
+	ee.data[ee.idIndex+1] = e
+	ee.idIndex++
+	return e, nil
 }
 
-func (ee *MemoryEventRepository) Delete(ctx context.Context, e models.Event) error {
-	// TODO implement me
-	panic("implement me")
+func (ee *MemoryEventRepository) Update(_ context.Context, e models.Event) error {
+	ee.mu.Lock()
+	defer ee.mu.Unlock()
+	if _, ok := ee.data[e.ID]; ok {
+		ee.data[e.ID] = e
+		return nil
+	}
+
+	return errors.New("event does not exist")
+}
+
+func (ee *MemoryEventRepository) Delete(_ context.Context, e models.Event) error {
+	ee.mu.Lock()
+	defer ee.mu.Unlock()
+	if _, ok := ee.data[e.ID]; ok {
+		delete(ee.data, e.ID)
+		return nil
+	}
+
+	return errors.New("event does not exist")
 }
 
 func (ee *MemoryEventRepository) Where() abstractstorage.EventExpression {
 	res := MemoryEventExpression{
-		mu: ee.mu,
+		mu:   ee.mu,
+		data: &ee.data,
 	}
 
 	return &res

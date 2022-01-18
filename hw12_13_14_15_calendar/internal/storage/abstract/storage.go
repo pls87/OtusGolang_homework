@@ -4,6 +4,6 @@ import "context"
 
 type Storage interface {
 	Events() EventRepository
-	Connect(ctx context.Context) error
-	Close() error
+	Init(ctx context.Context) error
+	Destroy() error
 }
