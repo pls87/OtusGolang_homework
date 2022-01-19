@@ -1,6 +1,11 @@
 package abstractstorage
 
-import "context"
+import (
+	"context"
+	"errors"
+)
+
+var ErrDoesNotExist = errors.New("entity doesn't exist")
 
 type Storage interface {
 	Events() EventRepository

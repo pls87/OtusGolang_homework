@@ -2,6 +2,7 @@ package sqlstorage
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"strings"
 
@@ -102,21 +103,23 @@ func (s *SQLEventRepository) All(ctx context.Context) (abstractstorage.EventIter
 
 func (s *SQLEventRepository) One(ctx context.Context, id models.ID) (models.Event, error) {
 	var ev models.Event
-	row := s.db.QueryRowxContext(ctx, `SELECT * FROM events WHERE id=%d`, id)
+	err := s.db.GetContext(ctx, &ev, `SELECT * FROM events WHERE id=%d`, id)
 
-	if row.Err() != nil {
-		return ev, row.Err()
+	switch err {
+	case nil:
+		return ev, nil
+	case sql.ErrNoRows:
+		return ev, fmt.Errorf("SELECT: event id=%d: %w", id, abstractstorage.ErrDoesNotExist)
+	default:
+		return ev, err
 	}
-
-	e := row.StructScan(&ev)
-	return ev, e
 }
 
 func (s *SQLEventRepository) Create(ctx context.Context, e models.Event) (added models.Event, err error) {
 	query := `INSERT INTO "events" (title, user_id, start, duration, notify_before,  description) 
 		VALUES ('?', ?, TIMESTAMP WITH TIME ZONE '?', '? nanoseconds', '? nanoseconds', '?')`
-	res, err := s.db.ExecContext(ctx, query, e.Title, e.UserID, e.Start, e.Duration.Nanoseconds(), e.NotifyBefore.Nanoseconds(), e.Desc)
-
+	res, err := s.db.ExecContext(
+		ctx, query, e.Title, e.UserID, e.Start, e.Duration.Nanoseconds(), e.NotifyBefore.Nanoseconds(), e.Desc)
 	if err == nil {
 		id, _ := res.LastInsertId()
 		e.ID = models.ID(id)
@@ -129,13 +132,23 @@ func (s *SQLEventRepository) Update(ctx context.Context, e models.Event) error {
 	query := `UPDATE "events" SET 
         title='?', user_id=?, start=TIMESTAMP WITH TIME ZONE '?', 
         duration='? nanoseconds', notify_before='? nanoseconds',  description='?' WHERE id=?`
-	_, err := s.db.ExecContext(ctx, query, e.Title, e.UserID, e.Start,
+	res, err := s.db.ExecContext(ctx, query, e.Title, e.UserID, e.Start,
 		e.Duration.Nanoseconds(), e.NotifyBefore.Nanoseconds(), e.Desc, e.ID)
+	if err == nil {
+		if affected, _ := res.RowsAffected(); affected == 0 {
+			return fmt.Errorf("UPDATE: event id=%d: %w", e.ID, abstractstorage.ErrDoesNotExist)
+		}
+	}
 	return err
 }
 
 func (s *SQLEventRepository) Delete(ctx context.Context, e models.Event) error {
-	_, err := s.db.ExecContext(ctx, `DELETE FROM "events" WHERE id=?`, e.ID)
+	res, err := s.db.ExecContext(ctx, `DELETE FROM "events" WHERE id=?`, e.ID)
+	if err == nil {
+		if affected, _ := res.RowsAffected(); affected == 0 {
+			return fmt.Errorf("DELETE: event id=%d: %w", e.ID, abstractstorage.ErrDoesNotExist)
+		}
+	}
 	return err
 }
 

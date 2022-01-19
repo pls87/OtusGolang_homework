@@ -2,7 +2,8 @@ package memorystorage
 
 import (
 	"context"
-	"errors"
+	"fmt"
+	"io"
 	"sync"
 
 	abstractstorage "github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/storage/abstract"
@@ -24,7 +25,7 @@ func (s *MemoryEventIterator) Current() (models.Event, error) {
 	if s.index < len(s.items) {
 		return s.items[s.index], nil
 	}
-	return models.Event{}, errors.New("iterator is finished")
+	return models.Event{}, fmt.Errorf("iterator is completed: %w", io.EOF)
 }
 
 func (s *MemoryEventIterator) ToArray() ([]models.Event, error) {
@@ -46,7 +47,7 @@ func (ee MemoryEventExpression) Execute(_ context.Context) (abstractstorage.Even
 	defer ee.mu.Unlock()
 	events := make([]models.Event, 0, 10)
 	for _, v := range *ee.data {
-		if ee.CheckEvent(v) {
+		if ee.checkEvent(v) {
 			events = append(events, v)
 		}
 	}
@@ -56,7 +57,7 @@ func (ee MemoryEventExpression) Execute(_ context.Context) (abstractstorage.Even
 	}, nil
 }
 
-func (ee MemoryEventExpression) CheckEvent(e models.Event) bool {
+func (ee MemoryEventExpression) checkEvent(e models.Event) bool {
 	if ee.UserID > 0 && e.UserID != ee.UserID {
 		return false
 	}
@@ -103,7 +104,7 @@ func (ee *MemoryEventRepository) One(_ context.Context, id models.ID) (models.Ev
 		return val, nil
 	}
 
-	return models.Event{}, errors.New("event does not exist")
+	return models.Event{}, fmt.Errorf("GET: event id=%d: %w", id, abstractstorage.ErrDoesNotExist)
 }
 
 func (ee *MemoryEventRepository) Create(_ context.Context, e models.Event) (added models.Event, err error) {
@@ -123,7 +124,7 @@ func (ee *MemoryEventRepository) Update(_ context.Context, e models.Event) error
 		return nil
 	}
 
-	return errors.New("event does not exist")
+	return fmt.Errorf("UPDATE: event id=%d: %w", e.ID, abstractstorage.ErrDoesNotExist)
 }
 
 func (ee *MemoryEventRepository) Delete(_ context.Context, e models.Event) error {
@@ -134,7 +135,7 @@ func (ee *MemoryEventRepository) Delete(_ context.Context, e models.Event) error
 		return nil
 	}
 
-	return errors.New("event does not exist")
+	return fmt.Errorf("DELETE: event id=%d: %w", e.ID, abstractstorage.ErrDoesNotExist)
 }
 
 func (ee *MemoryEventRepository) Where() abstractstorage.EventExpression {
