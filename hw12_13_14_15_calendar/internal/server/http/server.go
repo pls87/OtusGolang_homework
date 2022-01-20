@@ -44,9 +44,5 @@ func (s *Server) Start(ctx context.Context) error {
 }
 
 func (s *Server) Stop(ctx context.Context) error {
-	if err := s.httpServer.Shutdown(ctx); err != nil {
-		return err
-	}
-
-	return nil
+	return s.httpServer.Shutdown(ctx)
 }
