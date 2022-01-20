@@ -3,6 +3,7 @@ package sqlstorage
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -73,7 +74,7 @@ func (ee *SQLEventExpression) Execute(ctx context.Context) (abstractstorage.Even
 		whereClause = "WHERE " + whereClause
 	}
 
-	rows, err := ee.db.QueryxContext(ctx, `SELECT * FROM "events" ?`, whereClause)
+	rows, err := ee.db.QueryxContext(ctx, `SELECT * FROM "events" ?`, whereClause) //nolint:sqlclosecheck
 	if err != nil {
 		return nil, err
 	}
@@ -93,7 +94,7 @@ func (s *SQLEventRepository) Init() {
 }
 
 func (s *SQLEventRepository) All(ctx context.Context) (abstractstorage.EventIterator, error) {
-	rows, err := s.db.QueryxContext(ctx, `SELECT * FROM "events"`)
+	rows, err := s.db.QueryxContext(ctx, `SELECT * FROM "events"`) //nolint:sqlclosecheck
 	if err != nil {
 		return nil, err
 	}
@@ -105,10 +106,10 @@ func (s *SQLEventRepository) One(ctx context.Context, id models.ID) (models.Even
 	var ev models.Event
 	err := s.db.GetContext(ctx, &ev, `SELECT * FROM events WHERE id=%d`, id)
 
-	switch err {
-	case nil:
+	switch {
+	case err == nil:
 		return ev, nil
-	case sql.ErrNoRows:
+	case errors.Is(err, sql.ErrNoRows):
 		return ev, fmt.Errorf("SELECT: event id=%d: %w", id, abstractstorage.ErrDoesNotExist)
 	default:
 		return ev, err

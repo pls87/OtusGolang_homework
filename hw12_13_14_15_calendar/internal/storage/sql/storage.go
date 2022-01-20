@@ -37,6 +37,6 @@ func (s *SQLStorage) Init(ctx context.Context) error {
 	return err
 }
 
-func (s *SQLStorage) Destroy() error {
+func (s *SQLStorage) Dispose() error {
 	return s.db.Close()
 }

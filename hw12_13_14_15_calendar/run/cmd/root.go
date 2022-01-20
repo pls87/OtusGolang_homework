@@ -29,7 +29,7 @@ var (
 			storage := storage.New(cfg.Storage)
 			calendar := app.New(logg, storage, cfg)
 
-			server := internalhttp.NewServer(logg, calendar)
+			server := internalhttp.NewServer(logg, calendar, cfg.Net)
 
 			ctx, cancel := signal.NotifyContext(context.Background(),
 				syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
@@ -41,7 +41,7 @@ var (
 				ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
 				defer cancel()
 
-				if err := storage.Destroy(); err != nil {
+				if err := storage.Dispose(); err != nil {
 					logg.Error("failed to close storage connection: " + err.Error())
 				}
 

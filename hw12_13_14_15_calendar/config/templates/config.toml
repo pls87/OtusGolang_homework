@@ -1,7 +1,11 @@
 [logger]
-level = "dfdsf"
+level = "debug"
 
 [storage]
 type = "sql"
 driver = "postgres"
-conn = "user=calendar_user password=pass4calendarusr dbname=calendar_db sslmode=disable"
+conn = "host=127.0.0.1 port=5432 user=calendar_user password=pass4calendarusr dbname=calendar_db sslmode=disable"
+
+[net]
+host = "127.0.0.1"
+port = 8082

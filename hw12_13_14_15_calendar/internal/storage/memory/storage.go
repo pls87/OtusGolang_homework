@@ -35,6 +35,6 @@ func (s *MemoryStorage) Init(_ context.Context) error {
 	return nil
 }
 
-func (s *MemoryStorage) Destroy() error {
+func (s *MemoryStorage) Dispose() error {
 	return nil
 }
