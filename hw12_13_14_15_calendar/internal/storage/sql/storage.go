@@ -8,7 +8,7 @@ import (
 	// init postgres driver.
 	_ "github.com/lib/pq"
 	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/configs"
-	abstractstorage "github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/storage/abstract"
+	abstractstorage "github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/storage/basic"
 )
 
 type SQLStorage struct {
