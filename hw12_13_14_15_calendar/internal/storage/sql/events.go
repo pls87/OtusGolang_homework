@@ -83,31 +83,30 @@ func (s *SQLEventIterator) ToArray() ([]models.Event, error) {
 
 func (ee *SQLEventExpression) Execute(ctx context.Context) (abstractstorage.EventIterator, error) {
 	clauseBuilder := make([]string, 0, 3)
+	clauseArgs := make([]interface{}, 0, 5)
 	if ee.params.UserID > 0 {
-		clauseBuilder = append(clauseBuilder, fmt.Sprintf("(user_id=%d)", ee.params.UserID))
+		clauseBuilder = append(clauseBuilder, "(user_id=?)")
+		clauseArgs = append(clauseArgs, ee.params.UserID)
 	}
 	if !ee.params.Starts.Start.IsZero() {
-		clauseBuilder = append(clauseBuilder,
-			fmt.Sprintf("(start>=%s AND start<=%s)", ee.params.Starts.Start, ee.params.Starts.End()),
-		)
+		clauseBuilder = append(clauseBuilder, "(start>=? AND start<=?)")
+		clauseArgs = append(clauseArgs, ee.params.Starts.Start, ee.params.Starts.End())
 	}
 
 	if !ee.params.Intersection.Start.IsZero() {
 		clauseBuilder = append(clauseBuilder,
-			fmt.Sprintf("((start>=%s AND start<=%s) OR (start + duration >= %s AND start + duration <= %s))",
-				ee.params.Intersection.Start, ee.params.Intersection.End(),
-				ee.params.Intersection.Start, ee.params.Intersection.End(),
-			),
-		)
+			"((start>=? AND start<=?) OR (start + duration >= ? AND start + duration <= ?))")
+		clauseArgs = append(clauseArgs, ee.params.Intersection.Start, ee.params.Intersection.End(),
+			ee.params.Intersection.Start, ee.params.Intersection.End())
 	}
 
 	whereClause := strings.Join(clauseBuilder, " AND ")
 
 	if whereClause != "" {
-		whereClause = "WHERE " + whereClause
+		whereClause = " WHERE " + whereClause
 	}
 
-	rows, err := ee.db.QueryxContext(ctx, `SELECT * FROM "events" ?`, whereClause) //nolint:sqlclosecheck
+	rows, err := ee.db.QueryxContext(ctx, `SELECT * FROM "events"`+whereClause, clauseArgs) //nolint:sqlclosecheck
 	if err != nil {
 		return nil, err
 	}
