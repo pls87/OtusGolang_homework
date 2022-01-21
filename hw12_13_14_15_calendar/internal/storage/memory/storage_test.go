@@ -13,174 +13,7 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-var steps = []basicEventStep{
-	{
-		action: "create", expectedErr: nil, e: models.Event{
-			Timeframe: models.Timeframe{
-				Start:    time.Date(2022, 1, 12, 13, 0, 0, 0, time.Local),
-				Duration: time.Hour,
-			},
-			Title:        "Lunch",
-			UserID:       1,
-			NotifyBefore: 30 * time.Minute,
-			Desc:         "Time to eat!",
-		}, expectedRes: []models.Event{
-			{
-				ID: 1,
-				Timeframe: models.Timeframe{
-					Start:    time.Date(2022, 1, 12, 13, 0, 0, 0, time.Local),
-					Duration: time.Hour,
-				},
-				Title:        "Lunch",
-				UserID:       1,
-				NotifyBefore: 30 * time.Minute,
-				Desc:         "Time to eat!",
-			},
-		},
-	},
-	{
-		action: "create", expectedErr: nil, e: models.Event{
-			Timeframe: models.Timeframe{
-				Start: time.Date(2022, 2, 28, 15, 0, 0, 0,
-					time.FixedZone("OMST", 6)),
-				Duration: 30 * time.Minute,
-			},
-			Title:        "Daily Scrum",
-			UserID:       1,
-			NotifyBefore: 30 * time.Minute,
-			Desc:         "Time to meet!",
-		}, expectedRes: []models.Event{
-			{
-				ID: 1,
-				Timeframe: models.Timeframe{
-					Start:    time.Date(2022, 1, 12, 13, 0, 0, 0, time.Local),
-					Duration: time.Hour,
-				},
-				Title:        "Lunch",
-				UserID:       1,
-				NotifyBefore: 30 * time.Minute,
-				Desc:         "Time to eat!",
-			},
-			{
-				ID: 2,
-				Timeframe: models.Timeframe{
-					Start: time.Date(2022, 2, 28, 15, 0, 0, 0,
-						time.FixedZone("OMST", 6)),
-					Duration: 30 * time.Minute,
-				},
-				Title:        "Daily Scrum",
-				UserID:       1,
-				NotifyBefore: 30 * time.Minute,
-				Desc:         "Time to meet!",
-			},
-		},
-	},
-	{
-		action: "update", expectedErr: nil, e: models.Event{
-			ID: 2,
-			Timeframe: models.Timeframe{
-				Start: time.Date(2022, 2, 28, 17, 30, 0, 0,
-					time.FixedZone("OMST", 6)),
-				Duration: 30 * time.Minute,
-			},
-			Title:        "Daily Scrum",
-			UserID:       1,
-			NotifyBefore: 30 * time.Minute,
-			Desc:         "Time to meet later!",
-		}, expectedRes: []models.Event{
-			{
-				ID: 1,
-				Timeframe: models.Timeframe{
-					Start:    time.Date(2022, 1, 12, 13, 0, 0, 0, time.Local),
-					Duration: time.Hour,
-				},
-				Title:        "Lunch",
-				UserID:       1,
-				NotifyBefore: 30 * time.Minute,
-				Desc:         "Time to eat!",
-			},
-			{
-				ID: 2,
-				Timeframe: models.Timeframe{
-					Start: time.Date(2022, 2, 28, 17, 30, 0, 0,
-						time.FixedZone("OMST", 6)),
-					Duration: 30 * time.Minute,
-				},
-				Title:        "Daily Scrum",
-				UserID:       1,
-				NotifyBefore: 30 * time.Minute,
-				Desc:         "Time to meet later!",
-			},
-		},
-	},
-	{
-		action: "update", expectedErr: abstractstorage.ErrDoesNotExist, e: models.Event{
-			ID: 3,
-		}, expectedRes: []models.Event{
-			{
-				ID: 1,
-				Timeframe: models.Timeframe{
-					Start:    time.Date(2022, 1, 12, 13, 0, 0, 0, time.Local),
-					Duration: time.Hour,
-				},
-				Title:        "Lunch",
-				UserID:       1,
-				NotifyBefore: 30 * time.Minute,
-				Desc:         "Time to eat!",
-			},
-			{
-				ID: 2,
-				Timeframe: models.Timeframe{
-					Start: time.Date(2022, 2, 28, 17, 30, 0, 0,
-						time.FixedZone("OMST", 6)),
-					Duration: 30 * time.Minute,
-				},
-				Title:        "Daily Scrum",
-				UserID:       1,
-				NotifyBefore: 30 * time.Minute,
-				Desc:         "Time to meet later!",
-			},
-		},
-	},
-	{
-		action: "delete", expectedErr: nil, e: models.Event{
-			ID: 1,
-		}, expectedRes: []models.Event{
-			{
-				ID: 2,
-				Timeframe: models.Timeframe{
-					Start: time.Date(2022, 2, 28, 17, 30, 0, 0,
-						time.FixedZone("OMST", 6)),
-					Duration: 30 * time.Minute,
-				},
-				Title:        "Daily Scrum",
-				UserID:       1,
-				NotifyBefore: 30 * time.Minute,
-				Desc:         "Time to meet later!",
-			},
-		},
-	},
-	{
-		action: "delete", expectedErr: abstractstorage.ErrDoesNotExist, e: models.Event{
-			ID: 1,
-		}, expectedRes: []models.Event{
-			{
-				ID: 2,
-				Timeframe: models.Timeframe{
-					Start: time.Date(2022, 2, 28, 17, 30, 0, 0,
-						time.FixedZone("OMST", 6)),
-					Duration: 30 * time.Minute,
-				},
-				Title:        "Daily Scrum",
-				UserID:       1,
-				NotifyBefore: 30 * time.Minute,
-				Desc:         "Time to meet later!",
-			},
-		},
-	},
-}
-
-type basicEventStep struct {
+type eventStep struct {
 	action      string
 	e           models.Event
 	expectedRes []models.Event
@@ -202,10 +35,27 @@ func (s *eventsStorageTestSuite) TearDownTest() {
 }
 
 func (s *eventsStorageTestSuite) TestBasicOperations() {
-	s.RunSteps(steps)
+	s.RunSteps(basicSteps)
 }
 
-func (s *eventsStorageTestSuite) RunSteps(steps []basicEventStep) {
+func (s *eventsStorageTestSuite) TestFilterStartOperation() {
+	s.RunSteps(seedSteps)
+
+	eventIter, err := s.storage.Events().Where().StartsIn(models.Timeframe{
+		Start:    time.Date(2022, 2, 1, 0, 0, 0, 0, time.Local),
+		Duration: 30 * 24 * time.Hour,
+	}).Execute(context.Background())
+
+	s.NoError(err)
+
+	events, err := eventIter.ToArray()
+	s.NoError(err)
+	s.Equalf(1, len(events), "Length of filtered events should be %d but was %d", 1, len(events))
+
+	s.Equal(seedSteps[1].expectedRes[1], events[0])
+}
+
+func (s *eventsStorageTestSuite) RunSteps(steps []eventStep) {
 	for _, step := range steps {
 		switch step.action {
 		case "create":

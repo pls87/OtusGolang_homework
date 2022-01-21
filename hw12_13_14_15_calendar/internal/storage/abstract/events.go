@@ -40,44 +40,58 @@ type EventExpression interface {
 	Execute(ctx context.Context) (EventIterator, error)
 }
 
-func (ee *BasicEventExpression) Execute(_ context.Context) (EventIterator, error) {
-	panic("Abstract method called")
+type EventExpressionParams struct {
+	UserID       models.ID
+	Starts       models.Timeframe
+	Intersection models.Timeframe
 }
 
-func (ee *BasicEventExpression) User(id models.ID) EventExpression {
+func (ee *EventExpressionParams) User(id models.ID) {
 	ee.UserID = id
-	return ee
 }
 
-func (ee *BasicEventExpression) StartsIn(tf models.Timeframe) EventExpression {
+func (ee *EventExpressionParams) StartsIn(tf models.Timeframe) {
 	ee.Starts = tf
-	return ee
 }
 
-func (ee *BasicEventExpression) StartsLater(d time.Time) EventExpression {
-	return ee.StartsIn(models.Timeframe{
+func (ee *EventExpressionParams) StartsLater(d time.Time) {
+	ee.StartsIn(models.Timeframe{
 		Start:    d,
 		Duration: models.MaxDuration,
 	})
 }
 
-func (ee *BasicEventExpression) StartsBefore(d time.Time) EventExpression {
+func (ee *EventExpressionParams) StartsBefore(d time.Time) {
 	minDate := time.Unix(0, 0)
-	return ee.StartsIn(models.Timeframe{
+	ee.StartsIn(models.Timeframe{
 		Start:    minDate,
 		Duration: d.Sub(minDate),
 	})
 }
 
-func (ee *BasicEventExpression) StartsLast(d time.Duration) EventExpression {
-	return ee.StartsIn(models.Timeframe{
+func (ee *EventExpressionParams) StartsLast(d time.Duration) {
+	ee.StartsIn(models.Timeframe{
 		Start:    time.Now().Add(-d),
 		Duration: d,
 	})
 }
 
-func (ee *BasicEventExpression) Intersects(tf models.Timeframe) EventExpression {
+func (ee *EventExpressionParams) Intersects(tf models.Timeframe) {
 	ee.Intersection = tf
+}
 
-	return ee
+func (ee *EventExpressionParams) CheckEvent(e models.Event) bool {
+	if ee.UserID > 0 && e.UserID != ee.UserID {
+		return false
+	}
+	if !ee.Starts.Start.IsZero() && !(e.Start.After(ee.Starts.Start) && e.Start.Before(ee.Starts.End())) {
+		return false
+	}
+
+	if !ee.Intersection.Start.IsZero() && !((e.Start.After(ee.Starts.Start) && e.Start.Before(ee.Starts.End())) ||
+		(e.Timeframe.End().After(ee.Intersection.Start) && e.Timeframe.End().Before(ee.Intersection.End()))) {
+		return false
+	}
+
+	return true
 }

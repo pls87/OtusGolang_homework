@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/jmoiron/sqlx"
 	abstractstorage "github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/storage/abstract"
@@ -13,8 +14,38 @@ import (
 )
 
 type SQLEventExpression struct {
-	abstractstorage.BasicEventExpression
-	db *sqlx.DB
+	params *abstractstorage.EventExpressionParams
+	db     *sqlx.DB
+}
+
+func (ee *SQLEventExpression) User(id models.ID) abstractstorage.EventExpression {
+	ee.params.User(id)
+	return ee
+}
+
+func (ee *SQLEventExpression) StartsIn(tf models.Timeframe) abstractstorage.EventExpression {
+	ee.params.StartsIn(tf)
+	return ee
+}
+
+func (ee *SQLEventExpression) StartsLater(d time.Time) abstractstorage.EventExpression {
+	ee.params.StartsLater(d)
+	return ee
+}
+
+func (ee *SQLEventExpression) StartsBefore(d time.Time) abstractstorage.EventExpression {
+	ee.params.StartsBefore(d)
+	return ee
+}
+
+func (ee *SQLEventExpression) StartsLast(d time.Duration) abstractstorage.EventExpression {
+	ee.params.StartsLast(d)
+	return ee
+}
+
+func (ee *SQLEventExpression) Intersects(tf models.Timeframe) abstractstorage.EventExpression {
+	ee.params.Intersects(tf)
+	return ee
 }
 
 type SQLEventIterator struct {
@@ -50,20 +81,20 @@ func (s *SQLEventIterator) ToArray() ([]models.Event, error) {
 
 func (ee *SQLEventExpression) Execute(ctx context.Context) (abstractstorage.EventIterator, error) {
 	clauseBuilder := make([]string, 0, 3)
-	if ee.UserID > 0 {
-		clauseBuilder = append(clauseBuilder, fmt.Sprintf("(user_id=%d)", ee.UserID))
+	if ee.params.UserID > 0 {
+		clauseBuilder = append(clauseBuilder, fmt.Sprintf("(user_id=%d)", ee.params.UserID))
 	}
-	if !ee.Starts.Start.IsZero() {
+	if !ee.params.Starts.Start.IsZero() {
 		clauseBuilder = append(clauseBuilder,
-			fmt.Sprintf("(start>=%s AND start<=%s)", ee.Starts.Start, ee.Starts.End()),
+			fmt.Sprintf("(start>=%s AND start<=%s)", ee.params.Starts.Start, ee.params.Starts.End()),
 		)
 	}
 
-	if !ee.Intersection.Start.IsZero() {
+	if !ee.params.Intersection.Start.IsZero() {
 		clauseBuilder = append(clauseBuilder,
 			fmt.Sprintf("((start>=%s AND start<=%s) OR (start + duration >= %s AND start + duration <= %s))",
-				ee.Intersection.Start, ee.Intersection.End(),
-				ee.Intersection.Start, ee.Intersection.End(),
+				ee.params.Intersection.Start, ee.params.Intersection.End(),
+				ee.params.Intersection.Start, ee.params.Intersection.End(),
 			),
 		)
 	}
@@ -155,7 +186,8 @@ func (s *SQLEventRepository) Delete(ctx context.Context, e models.Event) error {
 
 func (s *SQLEventRepository) Where() abstractstorage.EventExpression {
 	res := SQLEventExpression{
-		db: s.db,
+		db:     s.db,
+		params: &abstractstorage.EventExpressionParams{},
 	}
 
 	return &res
