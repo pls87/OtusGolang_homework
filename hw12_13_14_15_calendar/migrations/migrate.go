@@ -12,7 +12,7 @@ func Migrate(cfg configs.StorageConf) {
 		return
 	}
 
-	db, err := goose.OpenDBWithDriver(cfg.Driver, cfg.ConnString)
+	db, err := goose.OpenDBWithDriver(cfg.Driver, cfg.Conn)
 	if err != nil {
 		log.Fatalf("goose: failed to open DB: %v\n", err)
 	}

@@ -14,11 +14,11 @@ import (
 type Server struct {
 	httpServer  *http.Server
 	httpService *Service
-	cfg         configs.HTTPConf
+	cfg         configs.NetConf
 	logger      *logrus.Logger
 }
 
-func NewServer(logger *logrus.Logger, app app.Application, cfg configs.HTTPConf) *Server {
+func NewServer(logger *logrus.Logger, app app.Application, cfg configs.NetConf) *Server {
 	return &Server{
 		logger:      logger,
 		cfg:         cfg,

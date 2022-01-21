@@ -2,7 +2,7 @@
 level = "debug"
 
 [storage]
-type = "sql"
+type = "memory"
 driver = "postgres"
 conn = "host=127.0.0.1 port=5432 user=calendar_user password=pass4calendarusr dbname=calendar_db sslmode=disable"
 

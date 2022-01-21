@@ -29,7 +29,7 @@ func (s *SQLStorage) Events() abstractstorage.EventRepository {
 }
 
 func (s *SQLStorage) Init(ctx context.Context) error {
-	db, err := sqlx.ConnectContext(ctx, s.cfg.Driver, s.cfg.ConnString)
+	db, err := sqlx.ConnectContext(ctx, s.cfg.Driver, s.cfg.Conn)
 	if err == nil {
 		s.db = db
 		s.events.Attach(s.db)

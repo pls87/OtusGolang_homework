@@ -7,28 +7,32 @@ import (
 )
 
 type Config struct {
-	Logger  LoggerConf
-	Storage StorageConf
-	Net     HTTPConf
+	Logger  LoggerConf  `toml:"logger"`
+	Storage StorageConf `toml:"storage"`
+	Net     NetConf     `toml:"net"`
 }
 
 type LoggerConf struct {
-	Level string
+	Level string `toml:"level"`
 }
 
 type StorageConf struct {
-	Type       string
-	Driver     string
-	ConnString string
+	Type   string `toml:"type"`
+	Driver string `toml:"driver"`
+	Conn   string `toml:"conn"`
 }
 
-type HTTPConf struct {
-	Host string
-	Port int
+type NetConf struct {
+	Host string `toml:"host"`
+	Port int    `toml:"port"`
 }
 
 func New(cfgFile string) Config {
-	cfg := Config{}
+	cfg := Config{
+		Logger:  LoggerConf{Level: "debug"},
+		Storage: StorageConf{Type: "memory"},
+		Net:     NetConf{Port: 8082},
+	}
 	if cfgFile != "" {
 		viper.SetConfigFile(cfgFile)
 	}
@@ -38,18 +42,7 @@ func New(cfgFile string) Config {
 	}
 
 	viper.AutomaticEnv()
-	viper.SetDefault("log.level", "debug")
-	viper.SetDefault("http.host", "")
-	viper.SetDefault("http.port", 8080)
-	viper.SetDefault("storage.type", "memory")
-
-	cfg.Logger.Level = viper.GetString("log.level")
-	cfg.Storage.Type = viper.GetString("storage.type")
-	cfg.Storage.Driver = viper.GetString("storage.driver")
-	cfg.Storage.ConnString = viper.GetString("storage.conn")
-
-	cfg.Net.Host = viper.GetString("net.host")
-	cfg.Net.Port = viper.GetInt("net.port")
+	viper.Unmarshal(&cfg)
 
 	return cfg
 }
