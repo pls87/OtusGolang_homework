@@ -1,14 +1,15 @@
 BIN := "./bin/calendar"
 DOCKER_IMG="calendar:develop"
+REPO=github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar
 
 GIT_HASH := $(shell git log --format="%h" -n 1)
-LDFLAGS := -X main.release="develop" -X main.buildDate=$(shell date -u +%Y-%m-%dT%H:%M:%S) -X main.gitHash=$(GIT_HASH)
+LDFLAGS := -X '${REPO}/cmd/calendar/cmd.Release=develop' -X '${REPO}/cmd/calendar/cmd.BuildDate=$(shell date -u +%Y-%m-%dT%H:%M:%S)' -X '${REPO}/cmd/calendar/cmd.GitHash=$(GIT_HASH)'
 
 build:
 	go build -v -o $(BIN) -ldflags "$(LDFLAGS)" ./cmd/calendar
 
 run: build
-	$(BIN) -config ./configs/templates/config.toml
+	$(BIN) --config ./configs/templates/config.toml
 
 #build-img:
 #	docker build \
