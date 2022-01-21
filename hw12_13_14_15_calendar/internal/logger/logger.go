@@ -1,13 +1,13 @@
 package logger
 
 import (
-	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/config"
 	"os"
 
+	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/configs"
 	"github.com/sirupsen/logrus"
 )
 
-func New(cfg config.LoggerConf) *logrus.Logger {
+func New(cfg configs.LoggerConf) *logrus.Logger {
 	log := logrus.New()
 	log.Out = os.Stdout
 	log.Level = logrus.DebugLevel

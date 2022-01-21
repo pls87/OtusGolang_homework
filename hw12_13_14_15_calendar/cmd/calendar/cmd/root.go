@@ -1,4 +1,4 @@
-package run
+package cmd
 
 import (
 	"context"
@@ -7,7 +7,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/config"
+	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/configs"
 	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/app"
 	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/logger"
 	internalhttp "github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/server/http"
@@ -16,7 +16,7 @@ import (
 )
 
 var (
-	cfg     config.Config
+	cfg     configs.Config
 	cfgFile string
 
 	rootCmd = &cobra.Command{
@@ -82,5 +82,5 @@ func init() {
 }
 
 func beforeRun() {
-	cfg = config.New(cfgFile)
+	cfg = configs.New(cfgFile)
 }

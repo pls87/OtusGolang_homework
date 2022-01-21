@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/config"
+	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/configs"
 	abstractstorage "github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/storage/abstract"
 	memorystorage "github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/storage/memory"
 	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/storage/models"
@@ -193,7 +193,7 @@ type eventsStorageTestSuite struct {
 }
 
 func (s *eventsStorageTestSuite) SetupTest() {
-	s.storage = memorystorage.New(config.StorageConf{})
+	s.storage = memorystorage.New(configs.StorageConf{})
 	s.NoError(s.storage.Init(context.Background()))
 }
 

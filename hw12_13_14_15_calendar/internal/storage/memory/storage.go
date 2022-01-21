@@ -4,17 +4,17 @@ import (
 	"context"
 	"sync"
 
-	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/config"
+	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/configs"
 	abstractstorage "github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/storage/abstract"
 )
 
 type MemoryStorage struct {
 	events MemoryEventRepository
-	cfg    config.StorageConf
+	cfg    configs.StorageConf
 	mu     *sync.RWMutex
 }
 
-func New(cfg config.StorageConf) *MemoryStorage {
+func New(cfg configs.StorageConf) *MemoryStorage {
 	m := sync.RWMutex{}
 	return &MemoryStorage{
 		events: MemoryEventRepository{

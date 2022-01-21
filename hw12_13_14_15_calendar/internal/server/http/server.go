@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/config"
+	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/configs"
 	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/app"
 	"github.com/sirupsen/logrus"
 )
@@ -14,11 +14,11 @@ import (
 type Server struct {
 	httpServer  *http.Server
 	httpService *Service
-	cfg         config.HTTPConf
+	cfg         configs.HTTPConf
 	logger      *logrus.Logger
 }
 
-func NewServer(logger *logrus.Logger, app app.Application, cfg config.HTTPConf) *Server {
+func NewServer(logger *logrus.Logger, app app.Application, cfg configs.HTTPConf) *Server {
 	return &Server{
 		logger:      logger,
 		cfg:         cfg,

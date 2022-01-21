@@ -7,17 +7,17 @@ import (
 
 	// init postgres driver.
 	_ "github.com/lib/pq"
-	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/config"
+	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/configs"
 	abstractstorage "github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/storage/abstract"
 )
 
 type SQLStorage struct {
-	cfg    config.StorageConf
+	cfg    configs.StorageConf
 	db     *sqlx.DB
 	events SQLEventRepository
 }
 
-func New(cfg config.StorageConf) *SQLStorage {
+func New(cfg configs.StorageConf) *SQLStorage {
 	return &SQLStorage{
 		events: SQLEventRepository{},
 		cfg:    cfg,
