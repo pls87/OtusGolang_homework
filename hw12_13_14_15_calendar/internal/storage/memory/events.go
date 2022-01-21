@@ -98,17 +98,14 @@ func (ee *MemoryEventRepository) Init() {
 	ee.data = make(map[models.ID]models.Event)
 }
 
-func (ee *MemoryEventRepository) All(_ context.Context) (abstractstorage.EventIterator, error) {
+func (ee *MemoryEventRepository) All(_ context.Context) (events []models.Event, e error) {
 	ee.mu.Lock()
 	defer ee.mu.Unlock()
-	events := make([]models.Event, 0, len(ee.data))
+	events = make([]models.Event, 0, len(ee.data))
 	for _, v := range ee.data {
 		events = append(events, v)
 	}
-	return &MemoryEventIterator{
-		mu:    ee.mu,
-		items: events,
-	}, nil
+	return events, nil
 }
 
 func (ee *MemoryEventRepository) One(_ context.Context, id models.ID) (models.Event, error) {
@@ -153,7 +150,7 @@ func (ee *MemoryEventRepository) Delete(_ context.Context, e models.Event) error
 	return fmt.Errorf("DELETE: event id=%d: %w", e.ID, abstractstorage.ErrDoesNotExist)
 }
 
-func (ee *MemoryEventRepository) Where() abstractstorage.EventExpression {
+func (ee *MemoryEventRepository) Select() abstractstorage.EventExpression {
 	res := MemoryEventExpression{
 		mu:     ee.mu,
 		data:   &ee.data,

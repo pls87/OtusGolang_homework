@@ -16,8 +16,8 @@ type EventIterator interface {
 
 type EventRepository interface {
 	Init()
-	All(ctx context.Context) (EventIterator, error)
-	Where() EventExpression
+	All(ctx context.Context) ([]models.Event, error)
+	Select() EventExpression
 	One(ctx context.Context, id models.ID) (models.Event, error)
 	Create(ctx context.Context, e models.Event) (added models.Event, err error)
 	Update(ctx context.Context, e models.Event) error

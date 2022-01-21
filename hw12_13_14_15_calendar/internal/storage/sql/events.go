@@ -124,13 +124,14 @@ func (s *SQLEventRepository) Attach(db *sqlx.DB) {
 func (s *SQLEventRepository) Init() {
 }
 
-func (s *SQLEventRepository) All(ctx context.Context) (abstractstorage.EventIterator, error) {
-	rows, err := s.db.QueryxContext(ctx, `SELECT * FROM "events"`) //nolint:sqlclosecheck
+func (s *SQLEventRepository) All(ctx context.Context) ([]models.Event, error) {
+	events := make([]models.Event, 0, 10)
+	err := s.db.SelectContext(ctx, &events, `SELECT * FROM "events"`)
 	if err != nil {
 		return nil, err
 	}
 
-	return &SQLEventIterator{rows}, nil
+	return events, nil
 }
 
 func (s *SQLEventRepository) One(ctx context.Context, id models.ID) (models.Event, error) {
@@ -184,7 +185,7 @@ func (s *SQLEventRepository) Delete(ctx context.Context, e models.Event) error {
 	return err
 }
 
-func (s *SQLEventRepository) Where() abstractstorage.EventExpression {
+func (s *SQLEventRepository) Select() abstractstorage.EventExpression {
 	res := SQLEventExpression{
 		db:     s.db,
 		params: &abstractstorage.EventExpressionParams{},

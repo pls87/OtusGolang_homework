@@ -41,7 +41,7 @@ func (s *eventsStorageTestSuite) TestBasicOperations() {
 func (s *eventsStorageTestSuite) TestFilterStartOperation() {
 	s.RunSteps(seedSteps)
 
-	eventIter, err := s.storage.Events().Where().StartsIn(models.Timeframe{
+	eventIter, err := s.storage.Events().Select().StartsIn(models.Timeframe{
 		Start:    time.Date(2022, 2, 1, 0, 0, 0, 0, time.Local),
 		Duration: 30 * 24 * time.Hour,
 	}).Execute(context.Background())
@@ -88,14 +88,12 @@ func (s *eventsStorageTestSuite) RunSteps(steps []eventStep) {
 			s.Error(e)
 		}
 
-		iter, e := s.storage.Events().All(context.Background())
-		s.NoError(e)
-		items, e := iter.ToArray()
+		events, e := s.storage.Events().All(context.Background())
 		s.NoError(e)
 
-		sort.Slice(items, func(i, j int) bool { return items[i].ID < items[j].ID })
+		sort.Slice(events, func(i, j int) bool { return events[i].ID < events[j].ID })
 
-		s.Equal(step.expectedRes, items)
+		s.Equal(step.expectedRes, events)
 	}
 }
 
