@@ -1,5 +1,7 @@
 package sqlstorage
 
+// haven't tested this package good enough
+
 import (
 	"context"
 	"database/sql"
