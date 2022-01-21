@@ -41,11 +41,39 @@ func (s *eventsStorageTestSuite) TestBasicOperations() {
 func (s *eventsStorageTestSuite) TestFilterStartOperation() {
 	s.RunSteps(seedSteps)
 
-	eventIter, err := s.storage.Events().Select().StartsIn(models.Timeframe{
+	exp := s.storage.Events().Select().StartsIn(models.Timeframe{
+		Start:    time.Date(2022, 2, 1, 0, 0, 0, 0, time.Local),
+		Duration: 30 * 24 * time.Hour,
+	})
+
+	s.ExecuteFilterResults(exp, seedSteps[1].expectedRes[1])
+}
+
+func (s *eventsStorageTestSuite) TestFilterIntersectionOperation() {
+	s.RunSteps(seedSteps)
+
+	// Test intersection start
+	exp := s.storage.Events().Select().Intersects(models.Timeframe{
+		Start:    time.Date(2022, 1, 12, 12, 30, 0, 0, time.Local),
+		Duration: 45 * time.Minute,
+	})
+	s.ExecuteFilterResults(exp, seedSteps[1].expectedRes[0])
+
+	// Test intersection end
+	exp = s.storage.Events().Select().Intersects(models.Timeframe{
+		Start:    time.Date(2022, 1, 12, 13, 30, 0, 0, time.Local),
+		Duration: 45 * time.Hour,
+	})
+	s.ExecuteFilterResults(exp, seedSteps[1].expectedRes[0])
+}
+
+func (s *eventsStorageTestSuite) TestFilterUserOperation() {
+	s.RunSteps(seedSteps)
+
+	eventIter, err := s.storage.Events().Select().User(2).StartsIn(models.Timeframe{
 		Start:    time.Date(2022, 2, 1, 0, 0, 0, 0, time.Local),
 		Duration: 30 * 24 * time.Hour,
 	}).Execute(context.Background())
-
 	s.NoError(err)
 
 	events, err := eventIter.ToArray()
@@ -53,6 +81,24 @@ func (s *eventsStorageTestSuite) TestFilterStartOperation() {
 	s.Equalf(1, len(events), "Length of filtered events should be %d but was %d", 1, len(events))
 
 	s.Equal(seedSteps[1].expectedRes[1], events[0])
+}
+
+func (s *eventsStorageTestSuite) TestFilterMultipleParamsOperation() {
+	s.RunSteps(seedSteps)
+
+	exp := s.storage.Events().Select().User(2)
+	s.ExecuteFilterResults(exp, seedSteps[1].expectedRes[1])
+}
+
+func (s *eventsStorageTestSuite) ExecuteFilterResults(exp abstractstorage.EventExpression, e models.Event) {
+	eventIter, err := exp.Execute(context.Background())
+	s.NoError(err)
+
+	events, err := eventIter.ToArray()
+	s.NoError(err)
+	s.Equalf(1, len(events), "Length of filtered events should be %d but was %d", 1, len(events))
+
+	s.Equal(e, events[0])
 }
 
 func (s *eventsStorageTestSuite) RunSteps(steps []eventStep) {

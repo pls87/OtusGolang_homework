@@ -207,7 +207,7 @@ var seedSteps = []eventStep{
 				Duration: 30 * time.Minute,
 			},
 			Title:        "Daily Scrum",
-			UserID:       1,
+			UserID:       2,
 			NotifyBefore: 30 * time.Minute,
 			Desc:         "Time to meet!",
 		}, expectedRes: []models.Event{
@@ -230,7 +230,7 @@ var seedSteps = []eventStep{
 					Duration: 30 * time.Minute,
 				},
 				Title:        "Daily Scrum",
-				UserID:       1,
+				UserID:       2,
 				NotifyBefore: 30 * time.Minute,
 				Desc:         "Time to meet!",
 			},

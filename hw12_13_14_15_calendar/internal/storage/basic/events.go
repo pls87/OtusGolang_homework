@@ -24,12 +24,6 @@ type EventRepository interface {
 	Delete(ctx context.Context, e models.Event) error
 }
 
-type BasicEventExpression struct {
-	UserID       models.ID
-	Starts       models.Timeframe
-	Intersection models.Timeframe
-}
-
 type EventExpression interface {
 	User(id models.ID) EventExpression
 	StartsIn(tf models.Timeframe) EventExpression
@@ -88,8 +82,9 @@ func (ee *EventExpressionParams) CheckEvent(e models.Event) bool {
 		return false
 	}
 
-	if !ee.Intersection.Start.IsZero() && !((e.Start.After(ee.Starts.Start) && e.Start.Before(ee.Starts.End())) ||
-		(e.Timeframe.End().After(ee.Intersection.Start) && e.Timeframe.End().Before(ee.Intersection.End()))) {
+	if !ee.Intersection.Start.IsZero() &&
+		!((e.Start.After(ee.Intersection.Start) && e.Start.Before(ee.Intersection.End())) ||
+			(e.Timeframe.End().After(ee.Intersection.Start) && e.Timeframe.End().Before(ee.Intersection.End()))) {
 		return false
 	}
 
