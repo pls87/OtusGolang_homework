@@ -32,15 +32,10 @@ func (s *Server) Start(ctx context.Context) error {
 
 	s.httpServer = &http.Server{
 		Addr:    net.JoinHostPort(s.cfg.Host, strconv.Itoa(s.cfg.Port)),
-		Handler: NewLogger(mux),
+		Handler: NewLogger(mux, s.logger),
 	}
 
-	if err := s.httpServer.ListenAndServe(); err != nil {
-		return err
-	}
-
-	<-ctx.Done()
-	return nil
+	return s.httpServer.ListenAndServe()
 }
 
 func (s *Server) Stop(ctx context.Context) error {

@@ -24,7 +24,7 @@ var (
 		Short: "A simple app to manage your events",
 		Long:  `<Some long desc here...>`,
 		Run: func(cmd *cobra.Command, args []string) {
-			logg := logger.New(cfg.Logger.Level)
+			logg := logger.New(cfg.Logger)
 
 			storage := storage.New(cfg.Storage)
 			calendar := app.New(logg, storage, cfg)
@@ -65,6 +65,8 @@ var (
 				cancel()
 				os.Exit(1)
 			}
+
+			<-ctx.Done()
 		},
 	}
 )

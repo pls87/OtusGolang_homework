@@ -12,6 +12,24 @@ type Service struct {
 	logger *logrus.Logger
 }
 
+type wrappedResponseWriter struct {
+	http.ResponseWriter
+	status int
+}
+
+func wrapResponseWriter(w http.ResponseWriter) wrappedResponseWriter {
+	return wrappedResponseWriter{ResponseWriter: w}
+}
+
+func (rw *wrappedResponseWriter) Status() int {
+	return rw.status
+}
+
+func (rw *wrappedResponseWriter) WriteHeader(code int) {
+	rw.status = code
+	rw.ResponseWriter.WriteHeader(code)
+}
+
 func NewService(app app.Application, logger *logrus.Logger) *Service {
 	return &Service{
 		app:    app,
