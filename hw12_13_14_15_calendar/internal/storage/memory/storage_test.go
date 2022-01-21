@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/configs"
-	abstractstorage "github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/storage/basic"
+	basicstorage "github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/storage/basic"
 	memorystorage "github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/storage/memory"
 	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/storage/models"
 	"github.com/stretchr/testify/suite"
@@ -22,7 +22,7 @@ type eventStep struct {
 
 type eventsStorageTestSuite struct {
 	suite.Suite
-	storage abstractstorage.Storage
+	storage basicstorage.Storage
 }
 
 func (s *eventsStorageTestSuite) SetupTest() {
@@ -90,7 +90,7 @@ func (s *eventsStorageTestSuite) TestFilterMultipleParamsOperation() {
 	s.ExecuteFilterResults(exp, seedSteps[1].expectedRes[1])
 }
 
-func (s *eventsStorageTestSuite) ExecuteFilterResults(exp abstractstorage.EventExpression, e models.Event) {
+func (s *eventsStorageTestSuite) ExecuteFilterResults(exp basicstorage.EventExpression, e models.Event) {
 	eventIter, err := exp.Execute(context.Background())
 	s.NoError(err)
 

@@ -3,7 +3,7 @@ package memorystorage_test
 import (
 	"time"
 
-	abstractstorage "github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/storage/basic"
+	basicstorage "github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/storage/basic"
 	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/storage/models"
 )
 
@@ -108,7 +108,7 @@ var basicSteps = []eventStep{
 		},
 	},
 	{
-		action: "update", expectedErr: abstractstorage.ErrDoesNotExist, e: models.Event{
+		action: "update", expectedErr: basicstorage.ErrDoesNotExist, e: models.Event{
 			ID: 3,
 		}, expectedRes: []models.Event{
 			{
@@ -155,7 +155,7 @@ var basicSteps = []eventStep{
 		},
 	},
 	{
-		action: "delete", expectedErr: abstractstorage.ErrDoesNotExist, e: models.Event{
+		action: "delete", expectedErr: basicstorage.ErrDoesNotExist, e: models.Event{
 			ID: 1,
 		}, expectedRes: []models.Event{
 			{

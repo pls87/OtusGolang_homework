@@ -11,41 +11,41 @@ import (
 	"time"
 
 	"github.com/jmoiron/sqlx"
-	abstractstorage "github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/storage/basic"
+	basicstorage "github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/storage/basic"
 	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/storage/models"
 )
 
 type SQLEventExpression struct {
-	params *abstractstorage.EventExpressionParams
+	params *basicstorage.EventExpressionParams
 	db     *sqlx.DB
 }
 
-func (ee *SQLEventExpression) User(id models.ID) abstractstorage.EventExpression {
+func (ee *SQLEventExpression) User(id models.ID) basicstorage.EventExpression {
 	ee.params.User(id)
 	return ee
 }
 
-func (ee *SQLEventExpression) StartsIn(tf models.Timeframe) abstractstorage.EventExpression {
+func (ee *SQLEventExpression) StartsIn(tf models.Timeframe) basicstorage.EventExpression {
 	ee.params.StartsIn(tf)
 	return ee
 }
 
-func (ee *SQLEventExpression) StartsLater(d time.Time) abstractstorage.EventExpression {
+func (ee *SQLEventExpression) StartsLater(d time.Time) basicstorage.EventExpression {
 	ee.params.StartsLater(d)
 	return ee
 }
 
-func (ee *SQLEventExpression) StartsBefore(d time.Time) abstractstorage.EventExpression {
+func (ee *SQLEventExpression) StartsBefore(d time.Time) basicstorage.EventExpression {
 	ee.params.StartsBefore(d)
 	return ee
 }
 
-func (ee *SQLEventExpression) StartsLast(d time.Duration) abstractstorage.EventExpression {
+func (ee *SQLEventExpression) StartsLast(d time.Duration) basicstorage.EventExpression {
 	ee.params.StartsLast(d)
 	return ee
 }
 
-func (ee *SQLEventExpression) Intersects(tf models.Timeframe) abstractstorage.EventExpression {
+func (ee *SQLEventExpression) Intersects(tf models.Timeframe) basicstorage.EventExpression {
 	ee.params.Intersects(tf)
 	return ee
 }
@@ -81,7 +81,7 @@ func (s *SQLEventIterator) ToArray() ([]models.Event, error) {
 	return res, nil
 }
 
-func (ee *SQLEventExpression) Execute(ctx context.Context) (abstractstorage.EventIterator, error) {
+func (ee *SQLEventExpression) Execute(ctx context.Context) (basicstorage.EventIterator, error) {
 	clauseBuilder := make([]string, 0, 3)
 	clauseArgs := make([]interface{}, 0, 5)
 	if ee.params.UserID > 0 {
@@ -143,7 +143,7 @@ func (s *SQLEventRepository) One(ctx context.Context, id models.ID) (models.Even
 	case err == nil:
 		return ev, nil
 	case errors.Is(err, sql.ErrNoRows):
-		return ev, fmt.Errorf("SELECT: event id=%d: %w", id, abstractstorage.ErrDoesNotExist)
+		return ev, fmt.Errorf("SELECT: event id=%d: %w", id, basicstorage.ErrDoesNotExist)
 	default:
 		return ev, err
 	}
@@ -170,7 +170,7 @@ func (s *SQLEventRepository) Update(ctx context.Context, e models.Event) error {
 		e.Duration.Nanoseconds(), e.NotifyBefore.Nanoseconds(), e.Desc, e.ID)
 	if err == nil {
 		if affected, _ := res.RowsAffected(); affected == 0 {
-			return fmt.Errorf("UPDATE: event id=%d: %w", e.ID, abstractstorage.ErrDoesNotExist)
+			return fmt.Errorf("UPDATE: event id=%d: %w", e.ID, basicstorage.ErrDoesNotExist)
 		}
 	}
 	return err
@@ -180,16 +180,16 @@ func (s *SQLEventRepository) Delete(ctx context.Context, e models.Event) error {
 	res, err := s.db.ExecContext(ctx, `DELETE FROM "events" WHERE id=?`, e.ID)
 	if err == nil {
 		if affected, _ := res.RowsAffected(); affected == 0 {
-			return fmt.Errorf("DELETE: event id=%d: %w", e.ID, abstractstorage.ErrDoesNotExist)
+			return fmt.Errorf("DELETE: event id=%d: %w", e.ID, basicstorage.ErrDoesNotExist)
 		}
 	}
 	return err
 }
 
-func (s *SQLEventRepository) Select() abstractstorage.EventExpression {
+func (s *SQLEventRepository) Select() basicstorage.EventExpression {
 	res := SQLEventExpression{
 		db:     s.db,
-		params: &abstractstorage.EventExpressionParams{},
+		params: &basicstorage.EventExpressionParams{},
 	}
 
 	return &res

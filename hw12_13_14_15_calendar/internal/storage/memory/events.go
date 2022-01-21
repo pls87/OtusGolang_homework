@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	abstractstorage "github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/storage/basic"
+	basicstorage "github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/storage/basic"
 	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/storage/models"
 )
 
@@ -38,12 +38,12 @@ func (s *MemoryEventIterator) Complete() error {
 }
 
 type MemoryEventExpression struct {
-	params *abstractstorage.EventExpressionParams
+	params *basicstorage.EventExpressionParams
 	mu     *sync.RWMutex
 	data   *map[models.ID]models.Event
 }
 
-func (ee *MemoryEventExpression) Execute(_ context.Context) (abstractstorage.EventIterator, error) {
+func (ee *MemoryEventExpression) Execute(_ context.Context) (basicstorage.EventIterator, error) {
 	ee.mu.Lock()
 	defer ee.mu.Unlock()
 	events := make([]models.Event, 0, 10)
@@ -58,32 +58,32 @@ func (ee *MemoryEventExpression) Execute(_ context.Context) (abstractstorage.Eve
 	}, nil
 }
 
-func (ee *MemoryEventExpression) User(id models.ID) abstractstorage.EventExpression {
+func (ee *MemoryEventExpression) User(id models.ID) basicstorage.EventExpression {
 	ee.params.User(id)
 	return ee
 }
 
-func (ee *MemoryEventExpression) StartsIn(tf models.Timeframe) abstractstorage.EventExpression {
+func (ee *MemoryEventExpression) StartsIn(tf models.Timeframe) basicstorage.EventExpression {
 	ee.params.StartsIn(tf)
 	return ee
 }
 
-func (ee *MemoryEventExpression) StartsLater(d time.Time) abstractstorage.EventExpression {
+func (ee *MemoryEventExpression) StartsLater(d time.Time) basicstorage.EventExpression {
 	ee.params.StartsLater(d)
 	return ee
 }
 
-func (ee *MemoryEventExpression) StartsBefore(d time.Time) abstractstorage.EventExpression {
+func (ee *MemoryEventExpression) StartsBefore(d time.Time) basicstorage.EventExpression {
 	ee.params.StartsBefore(d)
 	return ee
 }
 
-func (ee *MemoryEventExpression) StartsLast(d time.Duration) abstractstorage.EventExpression {
+func (ee *MemoryEventExpression) StartsLast(d time.Duration) basicstorage.EventExpression {
 	ee.params.StartsLast(d)
 	return ee
 }
 
-func (ee *MemoryEventExpression) Intersects(tf models.Timeframe) abstractstorage.EventExpression {
+func (ee *MemoryEventExpression) Intersects(tf models.Timeframe) basicstorage.EventExpression {
 	ee.params.Intersects(tf)
 	return ee
 }
@@ -116,7 +116,7 @@ func (ee *MemoryEventRepository) One(_ context.Context, id models.ID) (models.Ev
 		return val, nil
 	}
 
-	return models.Event{}, fmt.Errorf("GET: event id=%d: %w", id, abstractstorage.ErrDoesNotExist)
+	return models.Event{}, fmt.Errorf("GET: event id=%d: %w", id, basicstorage.ErrDoesNotExist)
 }
 
 func (ee *MemoryEventRepository) Create(_ context.Context, e models.Event) (added models.Event, err error) {
@@ -136,7 +136,7 @@ func (ee *MemoryEventRepository) Update(_ context.Context, e models.Event) error
 		return nil
 	}
 
-	return fmt.Errorf("UPDATE: event id=%d: %w", e.ID, abstractstorage.ErrDoesNotExist)
+	return fmt.Errorf("UPDATE: event id=%d: %w", e.ID, basicstorage.ErrDoesNotExist)
 }
 
 func (ee *MemoryEventRepository) Delete(_ context.Context, e models.Event) error {
@@ -147,14 +147,14 @@ func (ee *MemoryEventRepository) Delete(_ context.Context, e models.Event) error
 		return nil
 	}
 
-	return fmt.Errorf("DELETE: event id=%d: %w", e.ID, abstractstorage.ErrDoesNotExist)
+	return fmt.Errorf("DELETE: event id=%d: %w", e.ID, basicstorage.ErrDoesNotExist)
 }
 
-func (ee *MemoryEventRepository) Select() abstractstorage.EventExpression {
+func (ee *MemoryEventRepository) Select() basicstorage.EventExpression {
 	res := MemoryEventExpression{
 		mu:     ee.mu,
 		data:   &ee.data,
-		params: &abstractstorage.EventExpressionParams{},
+		params: &basicstorage.EventExpressionParams{},
 	}
 
 	return &res
