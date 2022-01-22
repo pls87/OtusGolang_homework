@@ -33,16 +33,14 @@ func New(cfgFile string) Config {
 		Storage: StorageConf{Type: "memory"},
 		Net:     NetConf{Port: 8082},
 	}
+
 	if cfgFile != "" {
 		viper.SetConfigFile(cfgFile)
+		if err := viper.ReadInConfig(); err == nil {
+			viper.Unmarshal(&cfg)
+			fmt.Println("Using configs file:", viper.ConfigFileUsed())
+		}
 	}
-
-	if err := viper.ReadInConfig(); err == nil {
-		fmt.Println("Using configs file:", viper.ConfigFileUsed())
-	}
-
-	viper.AutomaticEnv()
-	viper.Unmarshal(&cfg)
 
 	return cfg
 }
