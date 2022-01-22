@@ -8,7 +8,6 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - database:/var/lib/postgresql/calendar/data
       - ./init/create_db.sql:/docker-entrypoint-initdb.d/create_db.sql
     networks:
       main:
@@ -24,20 +23,6 @@ services:
       main:
         aliases:
           - adminer
-  proxy:
-    image: nginx:latest
-    volumes:
-      - ./templates/nginx:/etc/nginx/templates
-    ports:
-      - "80:80"
-    links:
-      - adminer:adminer
-    depends_on:
-      - adminer
-    networks:
-      main:
-        aliases:
-          - proxy
 volumes:
   database:
 networks:
