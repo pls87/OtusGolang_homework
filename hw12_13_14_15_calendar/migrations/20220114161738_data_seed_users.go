@@ -11,11 +11,9 @@ func init() {
 }
 
 func upDataSeedUsers(tx *sql.Tx) error {
-	query := `INSERT INTO users (first_name, last_name, email) VALUES ('Pavel', 'Lysenko', 'plysenko@mail.lo')`
-	if _, err := tx.Exec(query); err != nil {
-		return err
-	}
-	return nil
+	query := `INSERT INTO "users" (first_name, last_name, email) VALUES ('Pavel', 'Lysenko', 'plysenko@mail.lo')`
+	_, err := tx.Exec(query)
+	return err
 }
 
 func downDataSeedUsers(tx *sql.Tx) error {

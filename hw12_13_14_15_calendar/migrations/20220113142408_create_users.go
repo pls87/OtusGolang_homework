@@ -18,15 +18,11 @@ func upCreateUsers(tx *sql.Tx) error {
     "email"      character(255) NOT NULL,
     CONSTRAINT "users_ID" PRIMARY KEY ("ID")
 )`
-	if _, err := tx.Exec(query); err != nil {
-		return err
-	}
-	return nil
+	_, err := tx.Exec(query)
+	return err
 }
 
 func downCreateUsers(tx *sql.Tx) error {
-	if _, err := tx.Exec(`DROP TABLE "users"`); err != nil {
-		return err
-	}
-	return nil
+	_, err := tx.Exec(`DROP TABLE "users"`)
+	return err
 }

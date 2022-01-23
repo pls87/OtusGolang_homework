@@ -23,17 +23,13 @@ func upCreateEvents(tx *sql.Tx) error {
     	CONSTRAINT "events_ID" PRIMARY KEY ("ID")
 	);
 	ALTER TABLE ONLY "events"
-    	ADD CONSTRAINT "events_user_id_fkey" FOREIGN KEY (user_id) REFERENCES users ("ID") ON DELETE CASCADE;`
+    	ADD CONSTRAINT "events_user_id_fkey" FOREIGN KEY (user_id) REFERENCES "users" ("ID") ON DELETE CASCADE;`
 
-	if _, err := tx.Exec(query); err != nil {
-		return err
-	}
-	return nil
+	_, err := tx.Exec(query)
+	return err
 }
 
 func downCreateEvents(tx *sql.Tx) error {
-	if _, err := tx.Exec(`DROP TABLE "events"`); err != nil {
-		return err
-	}
-	return nil
+	_, err := tx.Exec(`DROP TABLE "events"`)
+	return err
 }

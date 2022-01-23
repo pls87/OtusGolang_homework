@@ -13,10 +13,8 @@ func init() {
 func upDataSeedEvents(tx *sql.Tx) error {
 	query := `INSERT INTO "events" (title, user_id, start, duration, notify_before,  description) 
 		VALUES ('Lunch', 1, TIMESTAMP WITH TIME ZONE '2022-01-15 13:00:00+06', '1 hour', '30 minutes', 'Eat and eat again')`
-	if _, err := tx.Exec(query); err != nil {
-		return err
-	}
-	return nil
+	_, err := tx.Exec(query)
+	return err
 }
 
 func downDataSeedEvents(tx *sql.Tx) error {
