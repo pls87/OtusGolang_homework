@@ -118,10 +118,6 @@ type SQLEventRepository struct {
 	db *sqlx.DB
 }
 
-func (s *SQLEventRepository) Attach(db *sqlx.DB) {
-	s.db = db
-}
-
 func (s *SQLEventRepository) Init() {
 }
 
