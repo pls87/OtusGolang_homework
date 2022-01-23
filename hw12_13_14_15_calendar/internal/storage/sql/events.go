@@ -133,7 +133,7 @@ func (s *SQLEventRepository) All(ctx context.Context) ([]models.Event, error) {
 
 func (s *SQLEventRepository) One(ctx context.Context, id models.ID) (models.Event, error) {
 	var ev models.Event
-	err := s.db.GetContext(ctx, &ev, `SELECT * FROM events WHERE id=%d`, id)
+	err := s.db.GetContext(ctx, &ev, `SELECT * FROM events WHERE ID=%d`, id)
 
 	switch {
 	case err == nil:
@@ -161,7 +161,7 @@ func (s *SQLEventRepository) Create(ctx context.Context, e models.Event) (added 
 func (s *SQLEventRepository) Update(ctx context.Context, e models.Event) error {
 	query := `UPDATE "events" SET 
         title='?', user_id=?, start=TIMESTAMP WITH TIME ZONE '?', 
-        duration='? nanoseconds', notify_before='? nanoseconds',  description='?' WHERE id=?`
+        duration='? nanoseconds', notify_before='? nanoseconds',  description='?' WHERE ID=?`
 	res, err := s.db.ExecContext(ctx, query, e.Title, e.UserID, e.Start,
 		e.Duration.Nanoseconds(), e.NotifyBefore.Nanoseconds(), e.Desc, e.ID)
 	if err == nil {
@@ -173,7 +173,7 @@ func (s *SQLEventRepository) Update(ctx context.Context, e models.Event) error {
 }
 
 func (s *SQLEventRepository) Delete(ctx context.Context, e models.Event) error {
-	res, err := s.db.ExecContext(ctx, `DELETE FROM "events" WHERE id=?`, e.ID)
+	res, err := s.db.ExecContext(ctx, `DELETE FROM "events" WHERE ID=?`, e.ID)
 	if err == nil {
 		if affected, _ := res.RowsAffected(); affected == 0 {
 			return fmt.Errorf("DELETE: event id=%d: %w", e.ID, basicstorage.ErrDoesNotExist)
