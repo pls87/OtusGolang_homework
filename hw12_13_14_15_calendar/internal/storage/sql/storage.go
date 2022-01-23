@@ -14,18 +14,18 @@ import (
 type SQLStorage struct {
 	cfg    configs.StorageConf
 	db     *sqlx.DB
-	events SQLEventRepository
+	events *SQLEventRepository
 }
 
 func New(cfg configs.StorageConf) *SQLStorage {
 	return &SQLStorage{
-		events: SQLEventRepository{},
+		events: &SQLEventRepository{},
 		cfg:    cfg,
 	}
 }
 
 func (s *SQLStorage) Events() basicstorage.EventRepository {
-	return &s.events
+	return s.events
 }
 
 func (s *SQLStorage) Init(ctx context.Context) error {

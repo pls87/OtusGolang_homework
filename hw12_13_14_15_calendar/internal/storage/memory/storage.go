@@ -9,7 +9,7 @@ import (
 )
 
 type MemoryStorage struct {
-	events MemoryEventRepository
+	events *MemoryEventRepository
 	cfg    configs.StorageConf
 	mu     *sync.RWMutex
 }
@@ -17,7 +17,7 @@ type MemoryStorage struct {
 func New(cfg configs.StorageConf) *MemoryStorage {
 	m := sync.RWMutex{}
 	return &MemoryStorage{
-		events: MemoryEventRepository{
+		events: &MemoryEventRepository{
 			mu: &m,
 		},
 		cfg: cfg,
@@ -26,7 +26,7 @@ func New(cfg configs.StorageConf) *MemoryStorage {
 }
 
 func (s *MemoryStorage) Events() basicstorage.EventRepository {
-	return &s.events
+	return s.events
 }
 
 func (s *MemoryStorage) Init(_ context.Context) error {
