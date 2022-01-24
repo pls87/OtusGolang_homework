@@ -7,10 +7,11 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/server/http"
+
 	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/configs"
 	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/app"
 	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/logger"
-	internalhttp "github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/server/http"
 	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/storage"
 	"github.com/spf13/cobra"
 )
@@ -29,7 +30,7 @@ var (
 			storage := storage.New(cfg.Storage)
 			calendar := app.New(logg, storage, cfg)
 
-			server := internalhttp.NewServer(logg, calendar, cfg.Net)
+			server := http.NewServer(logg, calendar, cfg.Net)
 
 			ctx, cancel := signal.NotifyContext(context.Background(),
 				syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
