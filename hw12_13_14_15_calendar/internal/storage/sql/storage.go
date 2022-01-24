@@ -1,4 +1,4 @@
-package sqlstorage
+package sql
 
 import (
 	"context"
@@ -8,27 +8,27 @@ import (
 	// init postgres driver.
 	_ "github.com/lib/pq"
 	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/configs"
-	basicstorage "github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/storage/basic"
+	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/storage/basic"
 )
 
-type SQLStorage struct {
+type Storage struct {
 	cfg    configs.StorageConf
 	db     *sqlx.DB
-	events *SQLEventRepository
+	events *EventRepository
 }
 
-func New(cfg configs.StorageConf) *SQLStorage {
-	return &SQLStorage{
-		events: &SQLEventRepository{},
+func New(cfg configs.StorageConf) *Storage {
+	return &Storage{
+		events: &EventRepository{},
 		cfg:    cfg,
 	}
 }
 
-func (s *SQLStorage) Events() basicstorage.EventRepository {
+func (s *Storage) Events() basic.EventRepository {
 	return s.events
 }
 
-func (s *SQLStorage) Init(ctx context.Context) error {
+func (s *Storage) Init(ctx context.Context) error {
 	db, err := sqlx.ConnectContext(ctx, s.cfg.Driver, s.cfg.Conn)
 	if err == nil {
 		s.db = db
@@ -38,6 +38,6 @@ func (s *SQLStorage) Init(ctx context.Context) error {
 	return err
 }
 
-func (s *SQLStorage) Dispose() error {
+func (s *Storage) Dispose() error {
 	return s.db.Close()
 }

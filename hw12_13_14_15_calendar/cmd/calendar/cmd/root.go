@@ -46,7 +46,7 @@ var (
 				}
 
 				if err := server.Stop(ctx); err != nil {
-					logg.Error("failed to stop http server: " + err.Error())
+					logg.Error("failed to stop http internal: " + err.Error())
 				}
 			}()
 
@@ -61,7 +61,7 @@ var (
 			logg.Info("calendar is running...")
 
 			if err := server.Start(ctx); err != nil {
-				logg.Error("failed to start http server: " + err.Error())
+				logg.Error("failed to start http internal: " + err.Error())
 				cancel()
 				os.Exit(1)
 			}

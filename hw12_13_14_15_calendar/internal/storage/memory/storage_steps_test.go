@@ -1,4 +1,4 @@
-package memorystorage_test
+package memory_test
 
 import (
 	"time"

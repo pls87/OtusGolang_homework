@@ -1,4 +1,4 @@
-package memorystorage
+package memory
 
 import (
 	"context"
@@ -8,16 +8,16 @@ import (
 	basicstorage "github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/storage/basic"
 )
 
-type MemoryStorage struct {
-	events *MemoryEventRepository
+type Storage struct {
+	events *EventRepository
 	cfg    configs.StorageConf
 	mu     *sync.RWMutex
 }
 
-func New(cfg configs.StorageConf) *MemoryStorage {
+func New(cfg configs.StorageConf) *Storage {
 	m := sync.RWMutex{}
-	return &MemoryStorage{
-		events: &MemoryEventRepository{
+	return &Storage{
+		events: &EventRepository{
 			mu: &m,
 		},
 		cfg: cfg,
@@ -25,16 +25,16 @@ func New(cfg configs.StorageConf) *MemoryStorage {
 	}
 }
 
-func (s *MemoryStorage) Events() basicstorage.EventRepository {
+func (s *Storage) Events() basicstorage.EventRepository {
 	return s.events
 }
 
-func (s *MemoryStorage) Init(_ context.Context) error {
+func (s *Storage) Init(_ context.Context) error {
 	s.events.Init()
 
 	return nil
 }
 
-func (s *MemoryStorage) Dispose() error {
+func (s *Storage) Dispose() error {
 	return nil
 }

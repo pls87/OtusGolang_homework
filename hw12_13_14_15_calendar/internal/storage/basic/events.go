@@ -1,4 +1,4 @@
-package basicstorage
+package basic
 
 import (
 	"context"

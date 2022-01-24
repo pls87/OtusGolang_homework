@@ -1,4 +1,4 @@
-package memorystorage
+package memory
 
 import (
 	"context"
@@ -7,43 +7,43 @@ import (
 	"sync"
 	"time"
 
-	basicstorage "github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/storage/basic"
+	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/storage/basic"
 	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/storage/models"
 )
 
-type MemoryEventIterator struct {
+type EventIterator struct {
 	index int
 	items []models.Event
 	mu    *sync.RWMutex
 }
 
-func (s *MemoryEventIterator) Next() bool {
+func (s *EventIterator) Next() bool {
 	s.index++
 	return s.index < len(s.items)
 }
 
-func (s *MemoryEventIterator) Current() (models.Event, error) {
+func (s *EventIterator) Current() (models.Event, error) {
 	if s.index < len(s.items) {
 		return s.items[s.index], nil
 	}
 	return models.Event{}, fmt.Errorf("iterator is completed: %w", io.EOF)
 }
 
-func (s *MemoryEventIterator) ToArray() ([]models.Event, error) {
+func (s *EventIterator) ToArray() ([]models.Event, error) {
 	return s.items, nil
 }
 
-func (s *MemoryEventIterator) Complete() error {
+func (s *EventIterator) Complete() error {
 	return nil
 }
 
-type MemoryEventExpression struct {
-	params *basicstorage.EventExpressionParams
+type EventExpression struct {
+	params *basic.EventExpressionParams
 	mu     *sync.RWMutex
 	data   *map[models.ID]models.Event
 }
 
-func (ee *MemoryEventExpression) Execute(_ context.Context) (basicstorage.EventIterator, error) {
+func (ee *EventExpression) Execute(_ context.Context) (basic.EventIterator, error) {
 	ee.mu.Lock()
 	defer ee.mu.Unlock()
 	events := make([]models.Event, 0, 10)
@@ -52,53 +52,53 @@ func (ee *MemoryEventExpression) Execute(_ context.Context) (basicstorage.EventI
 			events = append(events, v)
 		}
 	}
-	return &MemoryEventIterator{
+	return &EventIterator{
 		mu:    ee.mu,
 		items: events,
 	}, nil
 }
 
-func (ee *MemoryEventExpression) User(id models.ID) basicstorage.EventExpression {
+func (ee *EventExpression) User(id models.ID) basic.EventExpression {
 	ee.params.User(id)
 	return ee
 }
 
-func (ee *MemoryEventExpression) StartsIn(tf models.Timeframe) basicstorage.EventExpression {
+func (ee *EventExpression) StartsIn(tf models.Timeframe) basic.EventExpression {
 	ee.params.StartsIn(tf)
 	return ee
 }
 
-func (ee *MemoryEventExpression) StartsLater(d time.Time) basicstorage.EventExpression {
+func (ee *EventExpression) StartsLater(d time.Time) basic.EventExpression {
 	ee.params.StartsLater(d)
 	return ee
 }
 
-func (ee *MemoryEventExpression) StartsBefore(d time.Time) basicstorage.EventExpression {
+func (ee *EventExpression) StartsBefore(d time.Time) basic.EventExpression {
 	ee.params.StartsBefore(d)
 	return ee
 }
 
-func (ee *MemoryEventExpression) StartsLast(d time.Duration) basicstorage.EventExpression {
+func (ee *EventExpression) StartsLast(d time.Duration) basic.EventExpression {
 	ee.params.StartsLast(d)
 	return ee
 }
 
-func (ee *MemoryEventExpression) Intersects(tf models.Timeframe) basicstorage.EventExpression {
+func (ee *EventExpression) Intersects(tf models.Timeframe) basic.EventExpression {
 	ee.params.Intersects(tf)
 	return ee
 }
 
-type MemoryEventRepository struct {
+type EventRepository struct {
 	mu      *sync.RWMutex
 	data    map[models.ID]models.Event
 	idIndex models.ID
 }
 
-func (ee *MemoryEventRepository) Init() {
+func (ee *EventRepository) Init() {
 	ee.data = make(map[models.ID]models.Event)
 }
 
-func (ee *MemoryEventRepository) All(_ context.Context) (events []models.Event, e error) {
+func (ee *EventRepository) All(_ context.Context) (events []models.Event, e error) {
 	ee.mu.Lock()
 	defer ee.mu.Unlock()
 	events = make([]models.Event, 0, len(ee.data))
@@ -108,7 +108,7 @@ func (ee *MemoryEventRepository) All(_ context.Context) (events []models.Event, 
 	return events, nil
 }
 
-func (ee *MemoryEventRepository) One(_ context.Context, id models.ID) (models.Event, error) {
+func (ee *EventRepository) One(_ context.Context, id models.ID) (models.Event, error) {
 	ee.mu.Lock()
 	defer ee.mu.Unlock()
 
@@ -116,10 +116,10 @@ func (ee *MemoryEventRepository) One(_ context.Context, id models.ID) (models.Ev
 		return val, nil
 	}
 
-	return models.Event{}, fmt.Errorf("GET: event id=%d: %w", id, basicstorage.ErrDoesNotExist)
+	return models.Event{}, fmt.Errorf("GET: event id=%d: %w", id, basic.ErrDoesNotExist)
 }
 
-func (ee *MemoryEventRepository) Create(_ context.Context, e models.Event) (added models.Event, err error) {
+func (ee *EventRepository) Create(_ context.Context, e models.Event) (added models.Event, err error) {
 	ee.mu.Lock()
 	defer ee.mu.Unlock()
 	e.ID = ee.idIndex + 1
@@ -128,7 +128,7 @@ func (ee *MemoryEventRepository) Create(_ context.Context, e models.Event) (adde
 	return e, nil
 }
 
-func (ee *MemoryEventRepository) Update(_ context.Context, e models.Event) error {
+func (ee *EventRepository) Update(_ context.Context, e models.Event) error {
 	ee.mu.Lock()
 	defer ee.mu.Unlock()
 	if _, ok := ee.data[e.ID]; ok {
@@ -136,10 +136,10 @@ func (ee *MemoryEventRepository) Update(_ context.Context, e models.Event) error
 		return nil
 	}
 
-	return fmt.Errorf("UPDATE: event id=%d: %w", e.ID, basicstorage.ErrDoesNotExist)
+	return fmt.Errorf("UPDATE: event id=%d: %w", e.ID, basic.ErrDoesNotExist)
 }
 
-func (ee *MemoryEventRepository) Delete(_ context.Context, e models.Event) error {
+func (ee *EventRepository) Delete(_ context.Context, e models.Event) error {
 	ee.mu.Lock()
 	defer ee.mu.Unlock()
 	if _, ok := ee.data[e.ID]; ok {
@@ -147,14 +147,14 @@ func (ee *MemoryEventRepository) Delete(_ context.Context, e models.Event) error
 		return nil
 	}
 
-	return fmt.Errorf("DELETE: event id=%d: %w", e.ID, basicstorage.ErrDoesNotExist)
+	return fmt.Errorf("DELETE: event id=%d: %w", e.ID, basic.ErrDoesNotExist)
 }
 
-func (ee *MemoryEventRepository) Select() basicstorage.EventExpression {
-	res := MemoryEventExpression{
+func (ee *EventRepository) Select() basic.EventExpression {
+	res := EventExpression{
 		mu:     ee.mu,
 		data:   &ee.data,
-		params: &basicstorage.EventExpressionParams{},
+		params: &basic.EventExpressionParams{},
 	}
 
 	return &res
