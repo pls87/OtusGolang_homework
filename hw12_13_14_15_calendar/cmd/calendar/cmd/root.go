@@ -7,11 +7,10 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/server/http"
-
 	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/configs"
 	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/app"
 	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/logger"
+	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/server/http"
 	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/storage"
 	"github.com/spf13/cobra"
 )

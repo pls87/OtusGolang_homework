@@ -10,9 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/storage/basic"
-
 	"github.com/jmoiron/sqlx"
+	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/storage/basic"
 	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/storage/models"
 )
 
@@ -145,7 +144,7 @@ func (s *EventRepository) One(ctx context.Context, id models.ID) (models.Event, 
 
 func (s *EventRepository) Create(ctx context.Context, e models.Event) (added models.Event, err error) {
 	query := `INSERT INTO "events" (title, user_id, start, duration, notify_before,  description) 
-		VALUES ('?', ?, TIMESTAMP WITH TIME ZONE '?', '? nanoseconds', '? nanoseconds', '?')`
+                VALUES ('?', ?, TIMESTAMP WITH TIME ZONE '?', '? nanoseconds', '? nanoseconds', '?')`
 	res, err := s.db.ExecContext(
 		ctx, query, e.Title, e.UserID, e.Start, e.Duration.Nanoseconds(), e.NotifyBefore.Nanoseconds(), e.Desc)
 	if err == nil {
