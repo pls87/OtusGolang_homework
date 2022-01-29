@@ -81,21 +81,26 @@ func (s *EventIterator) ToArray() ([]models.Event, error) {
 	return res, nil
 }
 
+// Execute TODO: clean up this code later.
 func (ee *EventExpression) Execute(ctx context.Context) (basic.EventIterator, error) {
 	clauseBuilder := make([]string, 0, 3)
-	clauseArgs := make([]interface{}, 0, 5)
+	clauseArgs := make([]interface{}, 0, 7)
+	ind := 0
 	if ee.params.UserID > 0 {
-		clauseBuilder = append(clauseBuilder, "(user_id=?)")
+		clauseBuilder = append(clauseBuilder, fmt.Sprintf("(user_id=$%d)", ind+1))
 		clauseArgs = append(clauseArgs, ee.params.UserID)
+		ind++
 	}
 	if !ee.params.Starts.Start.IsZero() {
-		clauseBuilder = append(clauseBuilder, "(start>=? AND start<=?)")
+		clauseBuilder = append(clauseBuilder, fmt.Sprintf("(start>=$%d AND start<=$%d)", ind+1, ind+2))
 		clauseArgs = append(clauseArgs, ee.params.Starts.Start, ee.params.Starts.End())
+		ind += 2
 	}
 
 	if !ee.params.Intersection.Start.IsZero() {
 		clauseBuilder = append(clauseBuilder,
-			"((start>=? AND start<=?) OR (start + duration >= ? AND start + duration <= ?))")
+			fmt.Sprintf("((start>=$%d AND start<=$%d) OR (start + duration >= $%d AND start + duration <= $%d))",
+				ind+1, ind+2, ind+3, ind+4))
 		clauseArgs = append(clauseArgs, ee.params.Intersection.Start, ee.params.Intersection.End(),
 			ee.params.Intersection.Start, ee.params.Intersection.End())
 	}
@@ -130,7 +135,7 @@ func (s *EventRepository) All(ctx context.Context) ([]models.Event, error) {
 
 func (s *EventRepository) One(ctx context.Context, id models.ID) (models.Event, error) {
 	var ev models.Event
-	err := s.db.GetContext(ctx, &ev, `SELECT * FROM events WHERE ID=%d`, id)
+	err := s.db.GetContext(ctx, &ev, `SELECT * FROM events WHERE ID=$1`, id)
 
 	switch {
 	case err == nil:
@@ -144,12 +149,14 @@ func (s *EventRepository) One(ctx context.Context, id models.ID) (models.Event, 
 
 func (s *EventRepository) Create(ctx context.Context, e models.Event) (added models.Event, err error) {
 	query := `INSERT INTO "events" (title, user_id, start, duration, notify_before,  description) 
-                VALUES ('?', ?, TIMESTAMP WITH TIME ZONE '?', '? nanoseconds', '? nanoseconds', '?')`
-	res, err := s.db.ExecContext(
-		ctx, query, e.Title, e.UserID, e.Start, e.Duration.Nanoseconds(), e.NotifyBefore.Nanoseconds(), e.Desc)
+                VALUES ($1, $2, TIMESTAMP WITH TIME ZONE $3, $4, $5, $6) RETURNING "ID"`
+	lastID := 0
+	err = s.db.QueryRowxContext(
+		ctx, query, e.Title, e.UserID, e.Start, fmt.Sprintf("%d nanoseconds", e.Duration.Nanoseconds()),
+		fmt.Sprintf("%d nanoseconds", e.NotifyBefore.Nanoseconds()), e.Desc).Scan(&lastID)
+
 	if err == nil {
-		id, _ := res.LastInsertId()
-		e.ID = models.ID(id)
+		e.ID = models.ID(lastID)
 	}
 
 	return e, err
@@ -157,10 +164,11 @@ func (s *EventRepository) Create(ctx context.Context, e models.Event) (added mod
 
 func (s *EventRepository) Update(ctx context.Context, e models.Event) error {
 	query := `UPDATE "events" SET 
-        title='?', user_id=?, start=TIMESTAMP WITH TIME ZONE '?', 
-        duration='? nanoseconds', notify_before='? nanoseconds',  description='?' WHERE ID=?`
+        title=$1, user_id=?, start=TIMESTAMP WITH TIME ZONE $2, 
+        duration=$3, notify_before=$4,  description=$5 WHERE ID=$6`
 	res, err := s.db.ExecContext(ctx, query, e.Title, e.UserID, e.Start,
-		e.Duration.Nanoseconds(), e.NotifyBefore.Nanoseconds(), e.Desc, e.ID)
+		fmt.Sprintf("%d nanoseconds", e.Duration.Nanoseconds()),
+		fmt.Sprintf("%d nanoseconds", e.NotifyBefore.Nanoseconds()), e.Desc, e.ID)
 	if err != nil {
 		return err
 	}
@@ -171,7 +179,7 @@ func (s *EventRepository) Update(ctx context.Context, e models.Event) error {
 }
 
 func (s *EventRepository) Delete(ctx context.Context, e models.Event) error {
-	res, err := s.db.ExecContext(ctx, `DELETE FROM "events" WHERE ID=?`, e.ID)
+	res, err := s.db.ExecContext(ctx, `DELETE FROM "events" WHERE ID=$1`, e.ID)
 	if err != nil {
 		return err
 	}
