@@ -3,10 +3,13 @@ package handler
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 
 	"github.com/sirupsen/logrus"
 )
+
+var ErrMissedRequiredParam = errors.New("missed required parameter")
 
 type response struct {
 	logger *logrus.Logger

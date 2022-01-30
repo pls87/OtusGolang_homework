@@ -10,7 +10,9 @@ import (
 
 type EventApplication interface {
 	All(ctx context.Context) ([]models.Event, error)
-	New(ctx context.Context, c models.Event) (created models.Event, err error)
+	New(ctx context.Context, e models.Event) (created models.Event, err error)
+	Update(ctx context.Context, e models.Event) error
+	ForTimeframe(ctx context.Context, timeframe models.Timeframe) (events []models.Event, err error)
 }
 
 type EventApp struct {
@@ -22,6 +24,19 @@ func (a *EventApp) All(ctx context.Context) (collection []models.Event, err erro
 	return a.storage.Events().All(ctx)
 }
 
-func (a *EventApp) New(ctx context.Context, c models.Event) (created models.Event, err error) {
-	return a.storage.Events().Create(ctx, c)
+func (a *EventApp) New(ctx context.Context, e models.Event) (created models.Event, err error) {
+	return a.storage.Events().Create(ctx, e)
+}
+
+func (a *EventApp) Update(ctx context.Context, e models.Event) (err error) {
+	return a.storage.Events().Update(ctx, e)
+}
+
+func (a *EventApp) ForTimeframe(ctx context.Context, frame models.Timeframe) (events []models.Event, err error) {
+	it, err := a.storage.Events().Select().Intersects(frame).Execute(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return it.ToArray()
 }

@@ -22,6 +22,10 @@ func NewService(app app.Application, logger *logrus.Logger) *Service {
 	}
 }
 
+func (s *Service) Events() *EventService {
+	return s.events
+}
+
 func (s *Service) Noop(w http.ResponseWriter, r *http.Request) {
 	s.resp.text(r.Context(), w, "It Works!")
 }

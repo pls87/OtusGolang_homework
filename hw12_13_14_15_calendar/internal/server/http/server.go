@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strconv"
 
+	mux2 "github.com/gorilla/mux"
 	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/configs"
 	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/app"
 	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/server/basic"
@@ -30,8 +31,12 @@ func New(logger *logrus.Logger, app app.Application, cfg configs.APIConf) basic.
 }
 
 func (s *Server) Start(ctx context.Context) error {
-	mux := http.NewServeMux()
+	mux := mux2.NewRouter()
 	mux.HandleFunc("/noop", s.httpService.Noop)
+
+	mux.HandleFunc("/event", s.httpService.Events().Get).Methods("GET")
+	mux.HandleFunc("/event", s.httpService.Events().New).Methods("POST")
+	mux.HandleFunc("/event", s.httpService.Events().Update).Methods("PUT")
 
 	s.httpServer = &http.Server{
 		Addr:    net.JoinHostPort(s.cfg.Host, strconv.Itoa(s.cfg.Port)),
