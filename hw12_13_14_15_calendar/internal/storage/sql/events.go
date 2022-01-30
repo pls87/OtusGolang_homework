@@ -73,8 +73,9 @@ func (s *EventIterator) ToArray() ([]models.Event, error) {
 	var ev models.Event
 	for s.rows.Next() {
 		e := s.rows.StructScan(&ev)
-		if e == nil {
-			res = append(res, ev)
+		if e != nil {
+			_ = s.Complete()
+			return nil, e
 		}
 	}
 

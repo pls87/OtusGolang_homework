@@ -21,7 +21,6 @@ func init() {
 var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "Print the version number of calendar app",
-	Long:  `<Long version desc>`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if err := json.NewEncoder(os.Stdout).Encode(struct {
 			Release   string

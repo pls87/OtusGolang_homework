@@ -6,6 +6,12 @@ import (
 	"github.com/spf13/viper"
 )
 
+const (
+	DefaultLogLevel    = "debug"
+	DefaultStorageType = "memory"
+	DefaultAPIPort     = 8082
+)
+
 type Config struct {
 	Logger  LoggerConf  `toml:"logger"`
 	Storage StorageConf `toml:"storage"`
@@ -29,9 +35,9 @@ type NetConf struct {
 
 func New(cfgFile string) Config {
 	cfg := Config{
-		Logger:  LoggerConf{Level: "debug"},
-		Storage: StorageConf{Type: "memory"},
-		Net:     NetConf{Port: 8082},
+		Logger:  LoggerConf{Level: DefaultLogLevel},
+		Storage: StorageConf{Type: DefaultStorageType},
+		Net:     NetConf{Port: DefaultAPIPort},
 	}
 
 	if cfgFile != "" {

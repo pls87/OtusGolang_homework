@@ -40,14 +40,14 @@ func (s *EventIterator) Complete() error {
 type EventExpression struct {
 	params *basic.EventExpressionParams
 	mu     *sync.RWMutex
-	data   *map[models.ID]models.Event
+	data   map[models.ID]models.Event
 }
 
 func (ee *EventExpression) Execute(_ context.Context) (basic.EventIterator, error) {
 	ee.mu.Lock()
 	defer ee.mu.Unlock()
 	events := make([]models.Event, 0, 10)
-	for _, v := range *ee.data {
+	for _, v := range ee.data {
 		if ee.params.CheckEvent(v) {
 			events = append(events, v)
 		}
@@ -122,9 +122,9 @@ func (ee *EventRepository) One(_ context.Context, id models.ID) (models.Event, e
 func (ee *EventRepository) Create(_ context.Context, e models.Event) (added models.Event, err error) {
 	ee.mu.Lock()
 	defer ee.mu.Unlock()
-	e.ID = ee.idIndex + 1
-	ee.data[ee.idIndex+1] = e
 	ee.idIndex++
+	e.ID = ee.idIndex
+	ee.data[ee.idIndex] = e
 	return e, nil
 }
 
@@ -153,7 +153,7 @@ func (ee *EventRepository) Delete(_ context.Context, e models.Event) error {
 func (ee *EventRepository) Select() basic.EventExpression {
 	res := EventExpression{
 		mu:     ee.mu,
-		data:   &ee.data,
+		data:   ee.data,
 		params: &basic.EventExpressionParams{},
 	}
 

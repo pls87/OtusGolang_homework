@@ -12,7 +12,6 @@ func init() {
 var migrateCmd = &cobra.Command{
 	Use:   "migrate",
 	Short: "Migrates data in sql storage",
-	Long:  `<Long version desc>`,
 	Run: func(cmd *cobra.Command, args []string) {
 		migrations.Migrate(cfg.Storage)
 	},
