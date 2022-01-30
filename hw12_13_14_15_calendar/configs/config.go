@@ -9,13 +9,14 @@ import (
 const (
 	DefaultLogLevel    = "debug"
 	DefaultStorageType = "memory"
+	DefaultAPIType     = "http"
 	DefaultAPIPort     = 8082
 )
 
 type Config struct {
 	Logger  LoggerConf  `toml:"logger"`
 	Storage StorageConf `toml:"storage"`
-	Net     NetConf     `toml:"net"`
+	API     APIConf     `toml:"api"`
 }
 
 type LoggerConf struct {
@@ -28,7 +29,8 @@ type StorageConf struct {
 	Conn   string `toml:"conn"`
 }
 
-type NetConf struct {
+type APIConf struct {
+	Type string `toml:"type"`
 	Host string `toml:"host"`
 	Port int    `toml:"port"`
 }
@@ -37,7 +39,7 @@ func New(cfgFile string) Config {
 	cfg := Config{
 		Logger:  LoggerConf{Level: DefaultLogLevel},
 		Storage: StorageConf{Type: DefaultStorageType},
-		Net:     NetConf{Port: DefaultAPIPort},
+		API:     APIConf{Type: DefaultAPIType, Port: DefaultAPIPort},
 	}
 
 	if cfgFile != "" {

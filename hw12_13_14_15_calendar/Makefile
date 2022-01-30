@@ -9,7 +9,7 @@ build:
 	go build -v -o $(BIN) -ldflags "$(LDFLAGS)" ./cmd/calendar
 
 run: build
-	$(BIN) --config ./configs/templates/config.toml
+	$(BIN) server --config ./configs/templates/config.toml
 
 #build-img:
 #	docker build \

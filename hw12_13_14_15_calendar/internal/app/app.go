@@ -1,19 +1,27 @@
 package app
 
 import (
-	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/configs"
-	basicstorage "github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/storage/basic"
+	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/storage/basic"
 	"github.com/sirupsen/logrus"
 )
 
-type Application interface{}
-
-type App struct {
-	logger  *logrus.Logger
-	storage basicstorage.Storage
-	cfg     configs.Config
+type Application interface {
+	Events() EventApplication
 }
 
-func New(logger *logrus.Logger, storage basicstorage.Storage, cfg configs.Config) *App {
-	return &App{logger, storage, cfg}
+type App struct {
+	events EventApp
+}
+
+func (a *App) Events() EventApplication {
+	return &a.events
+}
+
+func New(logger *logrus.Logger, storage basic.Storage) Application {
+	return &App{
+		events: EventApp{
+			logger:  logger,
+			storage: storage,
+		},
+	}
 }

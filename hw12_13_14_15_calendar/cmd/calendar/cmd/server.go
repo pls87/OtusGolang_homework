@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/app"
-	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/server/http"
+	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/server"
 	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/storage"
 	"github.com/spf13/cobra"
 )
@@ -22,9 +22,9 @@ var serverCmd = &cobra.Command{
 	Short: "Starts server. gRPC/HTTP and host/port are in the config",
 	Run: func(cmd *cobra.Command, args []string) {
 		storage := storage.New(cfg.Storage)
-		calendar := app.New(logg, storage, cfg)
+		calendar := app.New(logg, storage)
 
-		server := http.NewServer(logg, calendar, cfg.Net)
+		server := server.New(logg, calendar, cfg.API)
 
 		ctx, cancel := signal.NotifyContext(context.Background(),
 			syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
@@ -56,7 +56,7 @@ var serverCmd = &cobra.Command{
 		logg.Info("calendar is running...")
 
 		if err := server.Start(ctx); err != nil {
-			logg.Error("failed to start http internal: " + err.Error())
+			logg.Error("failed to start server: " + err.Error())
 			cancel()
 			os.Exit(1)
 		}
