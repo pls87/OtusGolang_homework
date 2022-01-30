@@ -22,13 +22,19 @@ type EventService struct {
 }
 
 func (s *EventService) Get(w http.ResponseWriter, r *http.Request) {
+	var frame *models.Timeframe
+	var ok bool
+	ctx := r.Context()
+	if frame, ok = s.handleTimeframe(w, r); !ok {
+		return
+	}
+
 	var events []models.Event
 	var err error
-	ctx := r.Context()
-	if frame, status := s.handleTimeframe(w, r); status {
+	if frame == nil {
 		events, err = s.eventApp.All(ctx)
 	} else {
-		events, err = s.eventApp.ForTimeframe(ctx, frame)
+		events, err = s.eventApp.ForTimeframe(ctx, *frame)
 	}
 
 	if err != nil {
@@ -119,29 +125,17 @@ func (s *EventService) handleID(w http.ResponseWriter, r *http.Request) (models.
 	return models.ID(eventID), true
 }
 
-func (s *EventService) handleTimeframe(w http.ResponseWriter, r *http.Request) (models.Timeframe, bool) {
-	frame := models.Timeframe{}
-	now := time.Now()
+func (s *EventService) handleTimeframe(w http.ResponseWriter, r *http.Request) (frame *models.Timeframe, ok bool) {
+	frame = &models.Timeframe{}
 	period := r.URL.Query()["period"]
+
 	if len(period) > 0 {
-		switch period[0] {
-		case "day":
-			frame.Start = time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.Local)
-			frame.Duration = 24 * time.Hour
-		case "week":
-			d := now
-			for d.Weekday() != time.Monday {
-				d = d.AddDate(0, 0, -1)
-			}
-			frame.Start = time.Date(d.Year(), d.Month(), d.Day(), 0, 0, 0, 0, time.Local)
-			frame.Duration = 7 * 24 * time.Hour
-		case "month":
-			frame.Start = time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.Local)
-			frame.Start.AddDate(0, 1, 0)
-			frame.Duration = frame.Start.AddDate(0, 1, 0).Sub(frame.Start)
+		if res := frame.Period(time.Now(), period[0]); res {
+			return frame, true
 		}
-		return frame, true
+		s.resp.badRequest(r.Context(), w, "Malformed parameter 'period'", ErrMalformedParam)
+		return nil, false
 	}
-	s.resp.badRequest(r.Context(), w, "Malformed parameter 'period'", ErrMissedRequiredParam)
-	return frame, false
+
+	return nil, true
 }

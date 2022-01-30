@@ -9,7 +9,10 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-var ErrMissedRequiredParam = errors.New("missed required parameter")
+var (
+	ErrMissedRequiredParam = errors.New("missed required parameter")
+	ErrMalformedParam      = errors.New("missed required parameter")
+)
 
 type response struct {
 	logger *logrus.Logger

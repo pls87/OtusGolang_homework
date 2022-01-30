@@ -4,6 +4,7 @@ import "google/protobuf/timestamp.proto";
 import "google/protobuf/duration.proto";
 
 package event;
+option go_package = "./generated";
 
 message Event {
   int64 id = 1;
@@ -23,21 +24,12 @@ message Period {
   string unit = 1;
 }
 
-message EventStatus {
-  int32 code = 1;
-  string msg = 2;
-  Event event = 3;
-}
-
-message EventCollectionStatus {
-  int32 code = 1;
-  string msg = 2;
-  Event event = 3;
-}
+message Empty {}
 
 service Calendar {
-  rpc GetEvents(Period) returns (EventCollectionStatus) {}
-  rpc AddEvent(Event) returns (EventStatus){}
-  rpc UpdateEvent(Event) returns (EventStatus){}
-  rpc Delete(Event) returns (EventStatus) {}
+  rpc GetEvents(Period) returns (EventCollection) {}
+  rpc GetAllEvents(Empty) returns (EventCollection) {}
+  rpc AddEvent(Event) returns (Event){}
+  rpc UpdateEvent(Event) returns (Event){}
+  rpc Delete(Event) returns (Empty) {}
 }

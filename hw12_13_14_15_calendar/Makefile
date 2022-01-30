@@ -32,4 +32,7 @@ install-lint-deps:
 lint: install-lint-deps
 	golangci-lint run ./...
 
+generate-grpc:
+	protoc --go_out=internal/server/grpc --go-grpc_out=internal/server/grpc api/EventService.proto
+
 .PHONY: build run version test lint
