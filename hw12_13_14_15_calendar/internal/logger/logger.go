@@ -1,20 +1,18 @@
 package logger
 
-import "fmt"
+import (
+	"os"
 
-type Logger struct { // TODO
+	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/configs"
+	"github.com/sirupsen/logrus"
+)
+
+func New(cfg configs.LoggerConf) *logrus.Logger {
+	log := logrus.New()
+	log.Out = os.Stdout
+	log.Level = logrus.DebugLevel
+	if lvl, err := logrus.ParseLevel(cfg.Level); err != nil {
+		log.Level = lvl
+	}
+	return log
 }
-
-func New(level string) *Logger {
-	return &Logger{}
-}
-
-func (l Logger) Info(msg string) {
-	fmt.Println(msg)
-}
-
-func (l Logger) Error(msg string) {
-	// TODO
-}
-
-// TODO

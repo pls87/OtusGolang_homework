@@ -1,0 +1,29 @@
+version: "3"
+
+services:
+  db:
+    image: postgres:latest
+    environment:
+      POSTGRES_PASSWORD: Adminpassword321
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./init/create_db.sql:/docker-entrypoint-initdb.d/create_db.sql
+    networks:
+      main:
+        aliases:
+          - db
+  adminer:
+    image: adminer:latest
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+    networks:
+      main:
+        aliases:
+          - adminer
+volumes:
+  database:
+networks:
+  main:

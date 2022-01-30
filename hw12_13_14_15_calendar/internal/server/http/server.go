@@ -1,31 +1,43 @@
-package internalhttp
+package http
 
 import (
 	"context"
+	"net"
+	"net/http"
+	"strconv"
+
+	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/configs"
+	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/app"
+	"github.com/sirupsen/logrus"
 )
 
-type Server struct { // TODO
+type Server struct {
+	httpServer  *http.Server
+	httpService *Service
+	cfg         configs.NetConf
+	logger      *logrus.Logger
 }
 
-type Logger interface { // TODO
-}
-
-type Application interface { // TODO
-}
-
-func NewServer(logger Logger, app Application) *Server {
-	return &Server{}
+func NewServer(logger *logrus.Logger, app app.Application, cfg configs.NetConf) *Server {
+	return &Server{
+		logger:      logger,
+		cfg:         cfg,
+		httpService: NewService(app, logger),
+	}
 }
 
 func (s *Server) Start(ctx context.Context) error {
-	// TODO
-	<-ctx.Done()
-	return nil
+	mux := http.NewServeMux()
+	mux.HandleFunc("/noop", s.httpService.Noop)
+
+	s.httpServer = &http.Server{
+		Addr:    net.JoinHostPort(s.cfg.Host, strconv.Itoa(s.cfg.Port)),
+		Handler: NewLogger(mux, s.logger),
+	}
+
+	return s.httpServer.ListenAndServe()
 }
 
 func (s *Server) Stop(ctx context.Context) error {
-	// TODO
-	return nil
+	return s.httpServer.Shutdown(ctx)
 }
-
-// TODO
