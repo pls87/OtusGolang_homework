@@ -139,15 +139,15 @@ func (ee *EventRepository) Update(_ context.Context, e models.Event) error {
 	return fmt.Errorf("UPDATE: event id=%d: %w", e.ID, basic.ErrDoesNotExist)
 }
 
-func (ee *EventRepository) Delete(_ context.Context, e models.Event) error {
+func (ee *EventRepository) Delete(_ context.Context, id models.ID) error {
 	ee.mu.Lock()
 	defer ee.mu.Unlock()
-	if _, ok := ee.data[e.ID]; ok {
-		delete(ee.data, e.ID)
+	if _, ok := ee.data[id]; ok {
+		delete(ee.data, id)
 		return nil
 	}
 
-	return fmt.Errorf("DELETE: event id=%d: %w", e.ID, basic.ErrDoesNotExist)
+	return fmt.Errorf("DELETE: event id=%d: %w", id, basic.ErrDoesNotExist)
 }
 
 func (ee *EventRepository) Select() basic.EventExpression {

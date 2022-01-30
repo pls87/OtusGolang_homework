@@ -21,7 +21,7 @@ type EventRepository interface {
 	One(ctx context.Context, id models.ID) (models.Event, error)
 	Create(ctx context.Context, e models.Event) (added models.Event, err error)
 	Update(ctx context.Context, e models.Event) error
-	Delete(ctx context.Context, e models.Event) error
+	Delete(ctx context.Context, id models.ID) error
 }
 
 type EventExpression interface {

@@ -12,6 +12,7 @@ type EventApplication interface {
 	All(ctx context.Context) ([]models.Event, error)
 	New(ctx context.Context, e models.Event) (created models.Event, err error)
 	Update(ctx context.Context, e models.Event) error
+	Remove(ctx context.Context, id models.ID) error
 	ForTimeframe(ctx context.Context, timeframe models.Timeframe) (events []models.Event, err error)
 }
 
@@ -30,6 +31,10 @@ func (a *EventApp) New(ctx context.Context, e models.Event) (created models.Even
 
 func (a *EventApp) Update(ctx context.Context, e models.Event) (err error) {
 	return a.storage.Events().Update(ctx, e)
+}
+
+func (a *EventApp) Remove(ctx context.Context, id models.ID) (err error) {
+	return a.storage.Events().Delete(ctx, id)
 }
 
 func (a *EventApp) ForTimeframe(ctx context.Context, frame models.Timeframe) (events []models.Event, err error) {

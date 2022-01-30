@@ -125,7 +125,7 @@ func (s *eventsStorageTestSuite) RunSteps(steps []eventStep) {
 			s.NoError(e)
 			s.Equal(step.e, item)
 		case "delete":
-			err := s.storage.Events().Delete(context.Background(), step.e)
+			err := s.storage.Events().Delete(context.Background(), step.e.ID)
 			if step.expectedErr != nil {
 				s.ErrorIs(err, step.expectedErr)
 				continue

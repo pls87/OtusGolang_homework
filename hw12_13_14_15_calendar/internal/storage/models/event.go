@@ -19,7 +19,7 @@ type Event struct {
 	Timeframe
 	ID           ID            `db:"ID" json:"id"`
 	Title        string        `db:"title" json:"title"`
-	UserID       ID            `db:"user_id" json:"user_id"`
-	NotifyBefore time.Duration `db:"notify_before" json:"notify_before"`
+	UserID       ID            `db:"user_id" json:"userId"`
+	NotifyBefore time.Duration `db:"notify_before" json:"notifyBefore"`
 	Desc         string        `db:"description" json:"desc"`
 }

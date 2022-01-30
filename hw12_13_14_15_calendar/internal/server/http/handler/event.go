@@ -2,11 +2,15 @@ package handler
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 	"time"
 
+	"github.com/gorilla/mux"
 	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/app"
+	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/storage/basic"
 	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/storage/models"
 	"github.com/sirupsen/logrus"
 )
@@ -21,7 +25,7 @@ func (s *EventService) Get(w http.ResponseWriter, r *http.Request) {
 	var events []models.Event
 	var err error
 	ctx := r.Context()
-	if frame, e := s.handleTimeframe(r); e != nil {
+	if frame, status := s.handleTimeframe(w, r); status {
 		events, err = s.eventApp.All(ctx)
 	} else {
 		events, err = s.eventApp.ForTimeframe(ctx, frame)
@@ -55,9 +59,15 @@ func (s *EventService) New(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *EventService) Update(w http.ResponseWriter, r *http.Request) {
+	var id models.ID
+	var status bool
+	if id, status = s.handleID(w, r); !status {
+		return
+	}
+
 	ctx := r.Context()
 
-	var toUpdate models.Event
+	toUpdate := models.Event{ID: id}
 	err := json.NewDecoder(r.Body).Decode(&toUpdate)
 	if err != nil {
 		s.resp.badRequest(ctx, w, "failed to parse event body", err)
@@ -66,6 +76,10 @@ func (s *EventService) Update(w http.ResponseWriter, r *http.Request) {
 
 	err = s.eventApp.Update(ctx, toUpdate)
 	if err != nil {
+		if errors.Is(err, basic.ErrDoesNotExist) {
+			s.resp.notFound(ctx, w, fmt.Sprintf("event (id=%d) not found ", id), err)
+			return
+		}
 		s.resp.internalServerError(ctx, w, "Unexpected error while saving event to storage", err)
 		return
 	}
@@ -73,7 +87,39 @@ func (s *EventService) Update(w http.ResponseWriter, r *http.Request) {
 	s.resp.json(ctx, w, map[string]models.Event{"event": toUpdate})
 }
 
-func (s *EventService) handleTimeframe(r *http.Request) (models.Timeframe, error) {
+func (s *EventService) Remove(w http.ResponseWriter, r *http.Request) {
+	var id models.ID
+	var status bool
+	if id, status = s.handleID(w, r); !status {
+		return
+	}
+
+	ctx := r.Context()
+	err := s.eventApp.Remove(ctx, id)
+	if err != nil {
+		if errors.Is(err, basic.ErrDoesNotExist) {
+			s.resp.notFound(ctx, w, fmt.Sprintf("event (id=%d) not found ", id), err)
+			return
+		}
+		s.resp.internalServerError(ctx, w, "Unexpected error while saving event to storage", err)
+		return
+	}
+
+	s.resp.json(ctx, w, true)
+}
+
+func (s *EventService) handleID(w http.ResponseWriter, r *http.Request) (models.ID, bool) {
+	vars := mux.Vars(r)
+	eventID, e := strconv.Atoi(vars["id"])
+	if e != nil || eventID <= 0 {
+		s.resp.badRequest(r.Context(), w, "malformed event id", e)
+		return 0, false
+	}
+
+	return models.ID(eventID), true
+}
+
+func (s *EventService) handleTimeframe(w http.ResponseWriter, r *http.Request) (models.Timeframe, bool) {
 	frame := models.Timeframe{}
 	now := time.Now()
 	period := r.URL.Query()["period"]
@@ -94,7 +140,8 @@ func (s *EventService) handleTimeframe(r *http.Request) (models.Timeframe, error
 			frame.Start.AddDate(0, 1, 0)
 			frame.Duration = frame.Start.AddDate(0, 1, 0).Sub(frame.Start)
 		}
-		return frame, nil
+		return frame, true
 	}
-	return frame, fmt.Errorf("%w: 'period'", ErrMissedRequiredParam)
+	s.resp.badRequest(r.Context(), w, "Malformed parameter 'period'", ErrMissedRequiredParam)
+	return frame, false
 }

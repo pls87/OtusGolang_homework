@@ -28,6 +28,10 @@ func (eh *response) internalServerError(ctx context.Context, w http.ResponseWrit
 	eh.httpError(ctx, w, http.StatusInternalServerError, msg, err)
 }
 
+func (eh *response) notFound(ctx context.Context, w http.ResponseWriter, msg string, err error) {
+	eh.httpError(ctx, w, http.StatusNotFound, msg, err)
+}
+
 func (eh *response) json(ctx context.Context, w http.ResponseWriter, v interface{}) {
 	data, err := json.Marshal(v)
 	if err != nil {

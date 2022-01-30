@@ -36,7 +36,8 @@ func (s *Server) Start(ctx context.Context) error {
 
 	mux.HandleFunc("/event", s.httpService.Events().Get).Methods("GET")
 	mux.HandleFunc("/event", s.httpService.Events().New).Methods("POST")
-	mux.HandleFunc("/event", s.httpService.Events().Update).Methods("PUT")
+	mux.HandleFunc("/event/{id:[0-9]+}", s.httpService.Events().Update).Methods("PUT")
+	mux.HandleFunc("/event/{id:[0-9]+}", s.httpService.Events().Remove).Methods("DELETE")
 
 	s.httpServer = &http.Server{
 		Addr:    net.JoinHostPort(s.cfg.Host, strconv.Itoa(s.cfg.Port)),
