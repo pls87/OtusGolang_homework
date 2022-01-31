@@ -9,6 +9,7 @@ import (
 	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/configs"
 	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/app"
 	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/server/basic"
+	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/server/grpc/bridge"
 	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/server/grpc/generated"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
@@ -16,14 +17,14 @@ import (
 
 type Server struct {
 	grpcServer *grpc.Server
-	eventSrv   *EventService
+	eventSrv   *bridge.EventService
 	cfg        configs.APIConf
 	logger     *logrus.Logger
 }
 
 func New(logger *logrus.Logger, app app.Application, cfg configs.APIConf) basic.Server {
 	return &Server{
-		eventSrv: NewService(app.Events(), logger),
+		eventSrv: bridge.NewService(app.Events(), logger),
 		cfg:      cfg,
 		logger:   logger,
 	}
@@ -40,7 +41,6 @@ func (s *Server) Start(ctx context.Context) error {
 	))
 
 	generated.RegisterCalendarServer(s.grpcServer, s.eventSrv)
-	s.logger.Info("gRPC server starting...")
 	return s.grpcServer.Serve(lis)
 }
 
