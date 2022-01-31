@@ -4,6 +4,7 @@ import (
 	"context"
 	"sort"
 	"testing"
+	"time"
 
 	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/configs"
 	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/app"
@@ -26,6 +27,7 @@ type bridgeTestSuite struct {
 	suite.Suite
 	bridge  *EventService
 	storage basic.Storage
+	now     time.Time
 }
 
 func (s *bridgeTestSuite) SetupTest() {
@@ -36,6 +38,7 @@ func (s *bridgeTestSuite) SetupTest() {
 		logger:   l,
 		eventApp: app.NewEventApp(s.storage, l),
 	}
+	s.now = time.Now().In(time.UTC)
 }
 
 func (s *bridgeTestSuite) TearDownTest() {
@@ -44,6 +47,46 @@ func (s *bridgeTestSuite) TearDownTest() {
 
 func (s *bridgeTestSuite) TestBasicOperations() {
 	s.RunSteps(basicSteps)
+}
+
+func (s *bridgeTestSuite) TestFilterMonthOperation() {
+	steps := seedSteps(s.now)
+	s.RunSteps(steps)
+
+	ec, err := s.bridge.GetEvents(context.Background(), &generated.Period{Unit: "month"})
+	s.NoError(err)
+
+	events := protoCollection2Events(ec)
+	s.Equal(3, len(events))
+	s.Equal(steps[2].expectedRes, events)
+}
+
+func (s *bridgeTestSuite) TestFilterWeekOperation() {
+	steps := seedSteps(s.now)
+	s.RunSteps(steps)
+
+	ec, err := s.bridge.GetEvents(context.Background(), &generated.Period{Unit: "week"})
+	s.NoError(err)
+
+	events := protoCollection2Events(ec)
+	s.Equal(2, len(events))
+	s.Equal(steps[2].expectedRes[0:2], events)
+}
+
+func (s *bridgeTestSuite) TestFilterDayOperation() {
+	steps := seedSteps(s.now)
+	s.RunSteps(steps)
+
+	ec, err := s.bridge.GetEvents(context.Background(), &generated.Period{Unit: "day"})
+	s.NoError(err)
+
+	events := protoCollection2Events(ec)
+	l := 1
+	if s.now.Weekday() == time.Monday {
+		l = 2
+	}
+	s.Equal(l, len(events))
+	s.Equal(steps[2].expectedRes[0:l], events)
 }
 
 func (s *bridgeTestSuite) RunSteps(steps []eventStep) {

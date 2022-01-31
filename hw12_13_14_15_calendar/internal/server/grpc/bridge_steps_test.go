@@ -174,66 +174,122 @@ var basicSteps = []eventStep{
 	},
 }
 
-var seedSteps = []eventStep{
-	{
-		action: "create", expectedErr: nil, e: models.Event{
-			Timeframe: models.Timeframe{
-				Start:    time.Date(2022, 1, 12, 13, 0, 0, 0, time.Local),
-				Duration: time.Hour,
-			},
-			Title:        "Lunch",
-			UserID:       1,
-			NotifyBefore: 30 * time.Minute,
-			Desc:         "Time to eat!",
-		}, expectedRes: []models.Event{
-			{
-				ID: 1,
+func seedSteps(now time.Time) []eventStep {
+	day := time.Date(now.Year(), now.Month(), now.Day(), 12, 0, 0, 0, time.UTC)
+	week := now
+	for week.Weekday() != time.Monday {
+		if now.Day() > 15 {
+			week = week.AddDate(0, 0, -1)
+		} else {
+			week = week.AddDate(0, 0, 1)
+		}
+	}
+	month := time.Date(now.Year(), now.Month(), 15, 12, 0, 0, 0, time.UTC)
+	return []eventStep{
+		{
+			action: "create", expectedErr: nil, e: models.Event{
 				Timeframe: models.Timeframe{
-					Start:    time.Date(2022, 1, 12, 13, 0, 0, 0, time.Local),
+					Start:    day,
 					Duration: time.Hour,
 				},
 				Title:        "Lunch",
 				UserID:       1,
 				NotifyBefore: 30 * time.Minute,
 				Desc:         "Time to eat!",
+			}, expectedRes: []models.Event{
+				{
+					ID: 1,
+					Timeframe: models.Timeframe{
+						Start:    day,
+						Duration: time.Hour,
+					},
+					Title:        "Lunch",
+					UserID:       1,
+					NotifyBefore: 30 * time.Minute,
+					Desc:         "Time to eat!",
+				},
 			},
 		},
-	},
-	{
-		action: "create", expectedErr: nil, e: models.Event{
-			Timeframe: models.Timeframe{
-				Start: time.Date(2022, 2, 28, 15, 0, 0, 0,
-					time.UTC),
-				Duration: 30 * time.Minute,
-			},
-			Title:        "Daily Scrum",
-			UserID:       2,
-			NotifyBefore: 30 * time.Minute,
-			Desc:         "Time to meet!",
-		}, expectedRes: []models.Event{
-			{
-				ID: 1,
+		{
+			action: "create", expectedErr: nil, e: models.Event{
 				Timeframe: models.Timeframe{
-					Start:    time.Date(2022, 1, 12, 13, 0, 0, 0, time.Local),
-					Duration: time.Hour,
-				},
-				Title:        "Lunch",
-				UserID:       1,
-				NotifyBefore: 30 * time.Minute,
-				Desc:         "Time to eat!",
-			},
-			{
-				ID: 2,
-				Timeframe: models.Timeframe{
-					Start: time.Date(2022, 2, 28, 15, 0, 0, 0,
-						time.UTC),
+					Start:    week,
 					Duration: 30 * time.Minute,
 				},
 				Title:        "Daily Scrum",
 				UserID:       2,
 				NotifyBefore: 30 * time.Minute,
 				Desc:         "Time to meet!",
+			}, expectedRes: []models.Event{
+				{
+					ID: 1,
+					Timeframe: models.Timeframe{
+						Start:    day,
+						Duration: time.Hour,
+					},
+					Title:        "Lunch",
+					UserID:       1,
+					NotifyBefore: 30 * time.Minute,
+					Desc:         "Time to eat!",
+				},
+				{
+					ID: 2,
+					Timeframe: models.Timeframe{
+						Start:    week,
+						Duration: 30 * time.Minute,
+					},
+					Title:        "Daily Scrum",
+					UserID:       2,
+					NotifyBefore: 30 * time.Minute,
+					Desc:         "Time to meet!",
+				},
 			},
 		},
-	},
+		{
+			action: "create", expectedErr: nil, e: models.Event{
+				Timeframe: models.Timeframe{
+					Start:    month,
+					Duration: 120 * time.Minute,
+				},
+				Title:        "Workout",
+				UserID:       1,
+				NotifyBefore: 60 * time.Minute,
+				Desc:         "Time to work from park",
+			}, expectedRes: []models.Event{
+				{
+					ID: 1,
+					Timeframe: models.Timeframe{
+						Start:    day,
+						Duration: time.Hour,
+					},
+					Title:        "Lunch",
+					UserID:       1,
+					NotifyBefore: 30 * time.Minute,
+					Desc:         "Time to eat!",
+				},
+				{
+					ID: 2,
+					Timeframe: models.Timeframe{
+						Start:    week,
+						Duration: 30 * time.Minute,
+					},
+					Title:        "Daily Scrum",
+					UserID:       2,
+					NotifyBefore: 30 * time.Minute,
+					Desc:         "Time to meet!",
+				},
+				{
+					ID: 3,
+					Timeframe: models.Timeframe{
+						Start:    month,
+						Duration: 120 * time.Minute,
+					},
+					Title:        "Workout",
+					UserID:       1,
+					NotifyBefore: 60 * time.Minute,
+					Desc:         "Time to work from park",
+				},
+			},
+		},
+	}
 }
