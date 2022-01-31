@@ -31,7 +31,7 @@ func New(logger *logrus.Logger, app app.Application, cfg configs.APIConf) basic.
 }
 
 func (s *Server) Start(ctx context.Context) error {
-	lis, err := net.Listen("tcp", net.JoinHostPort(s.cfg.Host, strconv.Itoa(s.cfg.Port)))
+	socket, err := net.Listen("tcp", net.JoinHostPort(s.cfg.Host, strconv.Itoa(s.cfg.Port)))
 	if err != nil {
 		s.logger.Fatalf("grpc server - failed to listen: %v", err)
 	}
@@ -41,7 +41,7 @@ func (s *Server) Start(ctx context.Context) error {
 	))
 
 	generated.RegisterCalendarServer(s.grpcServer, s.eventSrv)
-	return s.grpcServer.Serve(lis)
+	return s.grpcServer.Serve(socket)
 }
 
 func (s *Server) Stop(ctx context.Context) error {
