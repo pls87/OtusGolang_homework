@@ -10,18 +10,15 @@ type Application interface {
 }
 
 type App struct {
-	events EventApp
+	events *EventApp
 }
 
 func (a *App) Events() EventApplication {
-	return &a.events
+	return a.events
 }
 
 func New(logger *logrus.Logger, storage basic.Storage) Application {
 	return &App{
-		events: EventApp{
-			logger:  logger,
-			storage: storage,
-		},
+		events: NewEventApp(storage, logger),
 	}
 }

@@ -36,7 +36,7 @@ func (s *Server) Start(ctx context.Context) error {
 
 	s.grpcServer = grpc.NewServer()
 	generated.RegisterCalendarServer(s.grpcServer, s.eventSrv)
-
+	s.logger.Info("gRPC server starting...")
 	return s.grpcServer.Serve(lis)
 }
 

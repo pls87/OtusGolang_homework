@@ -61,6 +61,8 @@ var serverCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
+		logg.Info("server has started")
+
 		<-ctx.Done()
 	},
 }

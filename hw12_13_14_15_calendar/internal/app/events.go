@@ -21,6 +21,13 @@ type EventApp struct {
 	storage basic.Storage
 }
 
+func NewEventApp(s basic.Storage, l *logrus.Logger) *EventApp {
+	return &EventApp{
+		logger:  l,
+		storage: s,
+	}
+}
+
 func (a *EventApp) All(ctx context.Context) (collection []models.Event, err error) {
 	return a.storage.Events().All(ctx)
 }

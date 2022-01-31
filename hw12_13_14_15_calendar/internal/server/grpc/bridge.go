@@ -51,7 +51,7 @@ func (es EventService) GetEvents(ctx context.Context, p *generated.Period) (*gen
 }
 
 func (es EventService) AddEvent(ctx context.Context, pe *generated.Event) (*generated.Event, error) {
-	e := protoToEvent(pe)
+	e := proto2Event(pe)
 	created, err := es.eventApp.New(ctx, e)
 	if err != nil {
 		return nil, err
@@ -61,7 +61,7 @@ func (es EventService) AddEvent(ctx context.Context, pe *generated.Event) (*gene
 }
 
 func (es EventService) UpdateEvent(ctx context.Context, pe *generated.Event) (*generated.Event, error) {
-	err := es.eventApp.Update(ctx, protoToEvent(pe))
+	err := es.eventApp.Update(ctx, proto2Event(pe))
 	if err != nil {
 		return nil, err
 	}
