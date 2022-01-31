@@ -4,6 +4,7 @@ go 1.16
 
 require (
 	github.com/gorilla/mux v1.8.0
+	github.com/grpc-ecosystem/go-grpc-middleware v1.0.0
 	github.com/jmoiron/sqlx v1.3.4
 	github.com/lib/pq v1.10.4
 	github.com/pressly/goose/v3 v3.5.0

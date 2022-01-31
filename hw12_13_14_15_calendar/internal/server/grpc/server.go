@@ -5,6 +5,7 @@ import (
 	"net"
 	"strconv"
 
+	grpcMiddleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/configs"
 	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/app"
 	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/server/basic"
@@ -23,7 +24,7 @@ type Server struct {
 func New(logger *logrus.Logger, app app.Application, cfg configs.APIConf) basic.Server {
 	return &Server{
 		eventSrv: NewService(app.Events(), logger),
-		cfg:      configs.APIConf{},
+		cfg:      cfg,
 		logger:   logger,
 	}
 }
@@ -34,7 +35,10 @@ func (s *Server) Start(ctx context.Context) error {
 		s.logger.Fatalf("grpc server - failed to listen: %v", err)
 	}
 
-	s.grpcServer = grpc.NewServer()
+	s.grpcServer = grpc.NewServer(grpcMiddleware.WithUnaryServerChain(
+		unaryLoggingInterceptor(s.logger),
+	))
+
 	generated.RegisterCalendarServer(s.grpcServer, s.eventSrv)
 	s.logger.Info("gRPC server starting...")
 	return s.grpcServer.Serve(lis)
