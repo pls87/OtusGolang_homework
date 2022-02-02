@@ -1,5 +1,5 @@
 BIN := "./bin/calendar"
-DOCKER_IMG="calendar:develop"
+DOCKER_API_IMG="calendarapi:develop"
 REPO=github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar
 
 GIT_HASH := $(shell git log --format="%h" -n 1)
@@ -11,14 +11,11 @@ build:
 run: build
 	$(BIN) server --config ./configs/templates/config.toml
 
-#build-img:
-#	docker build \
-#		--build-arg=LDFLAGS="$(LDFLAGS)" \
-#		-t $(DOCKER_IMG) \
-#		-f build/Dockerfile .
+build-api-img:
+	docker build --build-arg=LDFLAGS="$(LDFLAGS)" -t $(DOCKER_API_IMG) -f build/api.Dockerfile .
 
-#run-img: build-img
-#	docker run $(DOCKER_IMG)
+run-in-container: build-api-img
+	docker compose -p calendar -f deployments/docker-compose.yaml run api
 
 version: build
 	$(BIN) version

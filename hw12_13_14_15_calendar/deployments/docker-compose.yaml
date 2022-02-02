@@ -19,5 +19,13 @@ services:
       main:
         aliases:
           - adminer
+  api:
+    image: calendarapi:develop
+    depends_on:
+      - db
+    networks:
+      main:
+        aliases:
+          - api
 networks:
   main:
