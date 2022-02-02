@@ -27,5 +27,13 @@ services:
       main:
         aliases:
           - api
+  rabbit:
+    image: rabbitmq:3-alpine
+    env_file:
+      - rabbit.env
+    networks:
+      main:
+        aliases:
+          - api
 networks:
   main:
