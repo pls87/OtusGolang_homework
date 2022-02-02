@@ -3,12 +3,8 @@ version: "3"
 services:
   db:
     image: postgres:latest
-    environment:
-      POSTGRES_PASSWORD: Adminpassword321
-    ports:
-      - "5432:5432"
-    volumes:
-      - ./init/create_db.sql:/docker-entrypoint-initdb.d/create_db.sql
+    env_file:
+      - db.env
     networks:
       main:
         aliases:
@@ -23,7 +19,5 @@ services:
       main:
         aliases:
           - adminer
-volumes:
-  database:
 networks:
   main:
