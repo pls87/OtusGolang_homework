@@ -5,24 +5,21 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/configs"
 	"github.com/streadway/amqp"
 )
 
 var ErrNotificationWasNotConfirmed = errors.New("publish was not confirmed")
 
 type Producer interface {
-	Init() error
-	Dispose() error
+	Client
 	Publish(message Message, reliable bool) error
 }
 
-type AMPQProducer struct {
-	cfg  configs.QueueConf
-	conn *amqp.Connection
+type NotificationProducer struct {
+	NotificationClient
 }
 
-func (ap *AMPQProducer) OpenChannel(reliable bool) (ch *amqp.Channel, err error) {
+func (ap *NotificationProducer) openChannel(reliable bool) (ch *amqp.Channel, err error) {
 	ch, err = ap.conn.Channel()
 	if err != nil {
 		return nil, fmt.Errorf("couldn't open channel: %w", err)
@@ -37,57 +34,7 @@ func (ap *AMPQProducer) OpenChannel(reliable bool) (ch *amqp.Channel, err error)
 	return ch, err
 }
 
-func (ap *AMPQProducer) Init() (err error) {
-	ap.conn, err = amqp.Dial(fmt.Sprintf("amqp://%s:%s@%s:%d/",
-		ap.cfg.User, ap.cfg.Password, ap.cfg.Host, ap.cfg.Port))
-	if err != nil {
-		return fmt.Errorf("couldn't connect to queue: %w", err)
-	}
-
-	var ch *amqp.Channel
-	ch, err = ap.conn.Channel()
-	if err != nil {
-		return fmt.Errorf("couldn't open channel: %w", err)
-	}
-	defer ch.Close()
-
-	if err = ch.ExchangeDeclare(ap.cfg.Exchange, "direct",
-		true,  // durable
-		false, // auto-deleted
-		false, // internal
-		false, // noWait
-		nil,   // arguments
-	); err != nil {
-		return fmt.Errorf("couldn't create exchange %s: %w", ap.cfg.Exchange, err)
-	}
-
-	if _, err = ch.QueueDeclare(ap.cfg.Queue,
-		true,  // durable
-		false, // auto-deleted
-		false, // internal
-		false, // noWait
-		nil,   // arguments
-	); err != nil {
-		return fmt.Errorf("couldn't create queue %s: %w", ap.cfg.Queue, err)
-	}
-
-	if err = ch.QueueBind(ap.cfg.Queue, ap.cfg.Key, ap.cfg.Exchange, false, nil); err != nil {
-		return fmt.Errorf("error binding queue='%s' to exchange='%s' with routing key='%s': %w",
-			ap.cfg.Queue, ap.cfg.Exchange, ap.cfg.Key, err)
-	}
-
-	if err = ch.Confirm(false); err != nil {
-		return fmt.Errorf("error putting channel into confirm mode: %w", err)
-	}
-
-	return nil
-}
-
-func (ap *AMPQProducer) Dispose() (err error) {
-	return ap.conn.Close()
-}
-
-func (ap *AMPQProducer) Publish(message Message, reliable bool) (err error) {
+func (ap *NotificationProducer) Publish(message Message, reliable bool) (err error) {
 	var body []byte
 	body, err = json.Marshal(message)
 	if err != nil {
@@ -95,7 +42,7 @@ func (ap *AMPQProducer) Publish(message Message, reliable bool) (err error) {
 	}
 
 	var ch *amqp.Channel
-	if ch, err = ap.OpenChannel(reliable); err != nil {
+	if ch, err = ap.openChannel(reliable); err != nil {
 		return fmt.Errorf("error while publishing: %w", err)
 	}
 	defer ch.Close()
@@ -116,5 +63,5 @@ func (ap *AMPQProducer) Publish(message Message, reliable bool) (err error) {
 		return fmt.Errorf("error while publishing: %w", err)
 	}
 
-	return nil
+	return err
 }
