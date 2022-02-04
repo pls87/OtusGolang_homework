@@ -1,6 +1,7 @@
 package calendarcmd
 
 import (
+	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/cmd/calendar/cmd/notification"
 	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/configs"
 	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/logger"
 	"github.com/sirupsen/logrus"
@@ -30,9 +31,12 @@ func Execute() error {
 func init() {
 	cobra.OnInitialize(beforeRun)
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file")
+	rootCmd.AddCommand(notification.Cmd, serverCmd, migrateCmd, versionCmd)
 }
 
 func beforeRun() {
 	cfg = configs.New(cfgFile)
 	logg = logger.New(cfg.Logger)
+
+	notification.SetConfig(cfg, logg)
 }

@@ -31,7 +31,8 @@ func (nc *NotificationConsumer) Consume(tag string) (messages chan Message, erro
 		return nil, nil, fmt.Errorf("error while publishing: %w", err)
 	}
 
-	deliveries, err := ch.Consume(
+	var deliveries <-chan amqp.Delivery
+	deliveries, err = ch.Consume(
 		nc.cfg.Queue, // name
 		tag,          // consumerTag,
 		false,        // noAck

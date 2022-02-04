@@ -13,10 +13,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func init() {
-	rootCmd.AddCommand(serverCmd)
-}
-
 var serverCmd = &cobra.Command{
 	Use:   "server",
 	Short: "Starts server. gRPC/HTTP and host/port are in the config",
