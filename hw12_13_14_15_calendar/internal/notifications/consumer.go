@@ -41,7 +41,7 @@ func (nc *NotificationConsumer) Consume(tag string) (messages chan Message, erro
 		nil,          // arguments
 	)
 	if err != nil {
-		return nil, nil, fmt.Errorf("error while consuming messages: %s", err)
+		return nil, nil, fmt.Errorf("error while consuming messages: %w", err)
 	}
 
 	messages = make(chan Message)
