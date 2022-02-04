@@ -1,20 +1,29 @@
-BIN := "./bin/calendar"
+BIN_API := "./bin/calendar_api"
+BIN_SCHEDULER := "./bin/calendar_scheduler"
+BIN_SENDER := "./bin/calendar_scheduler"
 DOCKER_API_IMG="calendarapi:develop"
 REPO=github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar
 
 GIT_HASH := $(shell git log --format="%h" -n 1)
-LDFLAGS := -X '${REPO}/cmd/calendar/cmd.Release=develop' -X '${REPO}/cmd/calendar/cmd.BuildDate=$(shell date -u +%Y-%m-%dT%H:%M:%S)' -X '${REPO}/cmd/calendar/cmd.GitHash=$(GIT_HASH)'
+LDFLAGS := -X '${REPO}/cmd/shared/cmd.Release=develop' -X '${REPO}/cmd/shared/cmd.BuildDate=$(shell date -u +%Y-%m-%dT%H:%M:%S)' -X '${REPO}/cmd/shared/cmd.GitHash=$(GIT_HASH)'
 
-build:
-	go build -v -o $(BIN) -ldflags "$(LDFLAGS)" ./cmd/calendar
+APPS:=calendar scheduler sender
 
-run: build
-	$(BIN) server --config ./configs/templates/config.toml
+$(addprefix build-, $(APPS)): build-%: %
+	go build -v -o ./bin/$< -ldflags "$(LDFLAGS)" ./cmd/$<
+
+run-migrate:
+	./bin/calendar migrate --config ./configs/templates/config.toml
+
+$(addprefix run-, $(APPS)): run-%: % build-% run-migrate
+	./bin/$< --config ./configs/templates/config.toml
+
+build: build-calendar build-scheduler build-sender
 
 build-api-img:
 	docker build --build-arg=LDFLAGS="$(LDFLAGS)" -t $(DOCKER_API_IMG) -f build/api.Dockerfile .
 
-run-in-container: build-api-img
+run-api-in-container: build-api-img
 	docker compose -p calendar -f deployments/docker-compose.yaml run api
 
 version: build
@@ -32,4 +41,4 @@ lint: install-lint-deps
 generate-grpc:
 	protoc --go_out=internal/server/grpc --go-grpc_out=internal/server/grpc api/EventService.proto
 
-.PHONY: build run version test lint
+.PHONY: $(APPS) build run-api version test lint
