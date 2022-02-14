@@ -12,15 +12,17 @@ import (
 )
 
 type Storage struct {
-	cfg    configs.StorageConf
-	db     *sqlx.DB
-	events *EventRepository
+	cfg           configs.StorageConf
+	db            *sqlx.DB
+	events        *EventRepository
+	notifications *NotificationRepository
 }
 
 func New(cfg configs.StorageConf) *Storage {
 	return &Storage{
-		events: &EventRepository{},
-		cfg:    cfg,
+		events:        &EventRepository{},
+		notifications: &NotificationRepository{},
+		cfg:           cfg,
 	}
 }
 
@@ -28,12 +30,16 @@ func (s *Storage) Events() basic.EventRepository {
 	return s.events
 }
 
+func (s *Storage) Notifications() basic.NotificationRepository {
+	return s.notifications
+}
+
 func (s *Storage) Init(ctx context.Context) error {
 	db, err := sqlx.ConnectContext(ctx, s.cfg.Driver, s.cfg.Conn)
 	if err == nil {
 		s.db = db
-		s.events.Init()
 		s.events.db = s.db
+		s.notifications.db = s.db
 	}
 	return err
 }

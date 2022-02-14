@@ -59,7 +59,7 @@ var (
 					if !ok {
 						break
 					}
-					logg.Info("Received message: %v", m)
+					logg.Infof("Received message: %v", m)
 				case <-ctx.Done():
 					ok = false
 				}

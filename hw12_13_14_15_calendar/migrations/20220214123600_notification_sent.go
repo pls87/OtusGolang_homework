@@ -18,8 +18,8 @@ func upNotificationSent(tx *sql.Tx) error {
     	"time" 			timestamptz    NOT NULL,
     	CONSTRAINT "notification_sent_ID" PRIMARY KEY ("ID")
 	);
-	ALTER TABLE ONLY "notification_sent"
-    	ADD CONSTRAINT "notification_sent_event_id_fkey" FOREIGN KEY (event_id) REFERENCES "events" ("ID") ON DELETE CASCADE;`
+	ALTER TABLE ONLY "notification_sent" ADD CONSTRAINT "notification_sent_event_id_fkey" 
+	    FOREIGN KEY (event_id) REFERENCES "events" ("ID") ON DELETE CASCADE;`
 
 	_, err := tx.Exec(query)
 	return err
