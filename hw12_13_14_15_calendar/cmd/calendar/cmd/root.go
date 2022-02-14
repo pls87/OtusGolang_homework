@@ -2,6 +2,8 @@ package calendarcmd
 
 import (
 	"context"
+	"errors"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -25,7 +27,6 @@ var (
 	rootCmd = &cobra.Command{
 		Use:   "calendar",
 		Short: "A simple app to manage your events",
-		Long:  `<Some long desc here...>`,
 		Run: func(cmd *cobra.Command, args []string) {
 			storage := storage.New(cfg.Storage)
 			calendar := app.New(logg, storage)
@@ -36,9 +37,7 @@ var (
 				syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
 			defer cancel()
 
-			go func() {
-				<-ctx.Done()
-
+			shutDown := func() {
 				ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
 				defer cancel()
 
@@ -49,7 +48,7 @@ var (
 				if err := server.Stop(ctx); err != nil {
 					logg.Error("failed to stop http internal: " + err.Error())
 				}
-			}()
+			}
 
 			logg.Info("connecting to storage...")
 
@@ -61,13 +60,17 @@ var (
 
 			logg.Info("calendar is running...")
 
-			if err := server.Start(ctx); err != nil {
-				logg.Error("failed to start server: " + err.Error())
-				cancel()
-				os.Exit(1)
-			}
+			go func() {
+				if err := server.Start(ctx); err != nil && !errors.Is(err, http.ErrServerClosed) {
+					logg.Error("failed to start server: " + err.Error())
+					cancel()
+					os.Exit(1)
+				}
+			}()
 
 			<-ctx.Done()
+
+			shutDown()
 		},
 	}
 )

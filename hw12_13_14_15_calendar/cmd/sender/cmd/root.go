@@ -1,12 +1,20 @@
 package cmd
 
 import (
+	"context"
+	"os"
+	"os/signal"
+	"syscall"
+
 	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/cmd/shared"
 	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/configs"
 	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/logger"
+	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/notifications"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
+
+const consumerTag = "calendar_sender"
 
 var (
 	cfg     configs.Config
@@ -15,9 +23,49 @@ var (
 
 	rootCmd = &cobra.Command{
 		Use:   "calendar_scheduler",
-		Short: "A background process to generate notifications",
+		Short: "A background process to send notifications",
 		Run: func(cmd *cobra.Command, args []string) {
-			logg.Info("Root command does nothing. Please use special commands")
+			consumer := notifications.NewConsumer(cfg.Queue)
+
+			ctx, cancel := signal.NotifyContext(context.Background(),
+				syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
+			defer cancel()
+
+			shutDown := func() {
+				if err := consumer.Dispose(); err != nil {
+					logg.Errorf("error while consumer shut down: %s", err)
+				}
+			}
+
+			logg.Info("connecting to queue...")
+
+			messages, errors, err := consumer.Consume(consumerTag)
+			if err != nil {
+				logg.Errorf("couldn't connect to queue: %s", err)
+				cancel()
+				os.Exit(1)
+			}
+
+			var e error
+			var m notifications.Message
+			for ok := true; ok; {
+				select {
+				case e, ok = <-errors:
+					if !ok {
+						break
+					}
+					logg.Errorf("error from consumer: %s", e)
+				case m, ok = <-messages:
+					if !ok {
+						break
+					}
+					logg.Info("Received message: %v", m)
+				case <-ctx.Done():
+					ok = false
+				}
+			}
+
+			shutDown()
 		},
 	}
 )

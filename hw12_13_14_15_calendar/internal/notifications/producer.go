@@ -12,7 +12,7 @@ var ErrNotificationWasNotConfirmed = errors.New("publish was not confirmed")
 
 type Producer interface {
 	Client
-	Publish(message Message, reliable bool) error
+	Produce(message Message, reliable bool) error
 }
 
 type NotificationProducer struct {
@@ -34,7 +34,7 @@ func (ap *NotificationProducer) openChannel(reliable bool) (ch *amqp.Channel, er
 	return ch, err
 }
 
-func (ap *NotificationProducer) Publish(message Message, reliable bool) (err error) {
+func (ap *NotificationProducer) Produce(message Message, reliable bool) (err error) {
 	var body []byte
 	body, err = json.Marshal(message)
 	if err != nil {
@@ -56,7 +56,7 @@ func (ap *NotificationProducer) Publish(message Message, reliable bool) (err err
 		}()
 	}
 
-	if err = ch.Publish(ap.cfg.Exchange, ap.cfg.Key, false, false, amqp.Publishing{
+	if err = ch.Publish(Exchange, Key, false, false, amqp.Publishing{
 		ContentType: "application/json",
 		Body:        body,
 	}); err != nil {

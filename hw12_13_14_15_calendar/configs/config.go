@@ -7,14 +7,12 @@ import (
 )
 
 const (
-	DefaultLogLevel        = "debug"
-	DefaultStorageType     = "memory"
-	DefaultAPIType         = "http"
-	DefaultAPIPort         = 8082
-	DefaultQueuePort       = 5672
-	DefaultQueueExchange   = "calendar"
-	DefaultQueueName       = "notification"
-	DefaultQueueRoutingKey = "before_event"
+	DefaultLogLevel    = "debug"
+	DefaultStorageType = "memory"
+	DefaultAPIType     = "http"
+	DefaultAPIPort     = 8082
+	DefaultQueuePort   = 5672
+	DefaultQueueHost   = "127.0.0.1"
 )
 
 type Config struct {
@@ -42,12 +40,9 @@ type APIConf struct {
 
 type QueueConf struct {
 	User     string `toml:"user"`
-	Password string `toml:"password"`
+	Password string `toml:"pass"`
 	Host     string `toml:"host"`
 	Port     int    `toml:"port"`
-	Exchange string `toml:"exchange"`
-	Queue    string `toml:"queue"`
-	Key      string `toml:"key"`
 }
 
 func New(cfgFile string) Config {
@@ -56,10 +51,8 @@ func New(cfgFile string) Config {
 		Storage: StorageConf{Type: DefaultStorageType},
 		API:     APIConf{Type: DefaultAPIType, Port: DefaultAPIPort},
 		Queue: QueueConf{
-			Port:     DefaultQueuePort,
-			Exchange: DefaultQueueExchange,
-			Queue:    DefaultQueueName,
-			Key:      DefaultQueueRoutingKey,
+			Port: DefaultQueuePort,
+			Host: DefaultQueueHost,
 		},
 	}
 

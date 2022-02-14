@@ -4,12 +4,13 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/configs"
 	"github.com/streadway/amqp"
 )
 
 type Consumer interface {
 	Client
-	Consume(tag string) (messages chan Message, errors chan error, err error)
+	Consume(tag string) (messages <-chan Message, errors <-chan error, err error)
 }
 
 type NotificationConsumer struct {
@@ -25,52 +26,60 @@ func (nc *NotificationConsumer) openChannel() (ch *amqp.Channel, err error) {
 	return ch, err
 }
 
-func (nc *NotificationConsumer) Consume(tag string) (messages chan Message, errors chan error, err error) {
+func (nc *NotificationConsumer) Consume(tag string) (messages <-chan Message, errors <-chan error, err error) {
 	var ch *amqp.Channel
 	if ch, err = nc.openChannel(); err != nil {
-		return nil, nil, fmt.Errorf("error while publishing: %w", err)
+		return nil, nil, fmt.Errorf("error while opening channnel for consuming: %w", err)
 	}
 
 	var deliveries <-chan amqp.Delivery
 	deliveries, err = ch.Consume(
-		nc.cfg.Queue, // name
-		tag,          // consumerTag,
-		false,        // noAck
-		false,        // exclusive
-		false,        // noLocal
-		false,        // noWait
-		nil,          // arguments
+		Queue, // name
+		tag,   // consumerTag,
+		false, // noAck
+		false, // exclusive
+		false, // noLocal
+		false, // noWait
+		nil,   // arguments
 	)
 	if err != nil {
 		return nil, nil, fmt.Errorf("error while consuming messages: %w", err)
 	}
 
-	messages = make(chan Message)
-	errors = make(chan error)
+	msgs := make(chan Message)
+	errs := make(chan error)
 
 	go func() {
 		defer func() {
-			close(messages)
+			close(msgs)
 			e := ch.Close()
 			if e != nil {
-				errors <- fmt.Errorf("channel couldn't be closed: %w", e)
+				errs <- fmt.Errorf("channel couldn't be closed: %w", e)
 			}
-			close(errors)
+			close(errs)
 		}()
 		var e error
 		for d := range deliveries {
 			if e = d.Ack(false); e != nil {
-				errors <- fmt.Errorf("message couldn't be acknowledged: %w", e)
+				errs <- fmt.Errorf("message couldn't be acknowledged: %w", e)
 				continue
 			}
 			var msg Message
 			if e = json.Unmarshal(d.Body, &msg); e != nil {
-				errors <- fmt.Errorf("message couldn't be parsed: %w", e)
+				errs <- fmt.Errorf("message couldn't be parsed: %w", e)
 				continue
 			}
-			messages <- msg
+			msgs <- msg
 		}
 	}()
 
-	return messages, errors, nil
+	return msgs, errs, nil
+}
+
+func NewConsumer(c configs.QueueConf) Consumer {
+	return &NotificationConsumer{
+		NotificationClient{
+			cfg: c,
+		},
+	}
 }

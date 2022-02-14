@@ -10,3 +10,9 @@ conn = "host=127.0.0.1 port=5432 user=calendar_user password=pass4calendarusr db
 type = "grpc"
 host = "127.0.0.1"
 port = 8082
+
+[QUEUE]
+host = "127.0.0.1"
+port = 8087
+user = "cr_user"
+pass = "password"

@@ -7,6 +7,12 @@ import (
 	"github.com/streadway/amqp"
 )
 
+const (
+	Exchange = "calendar"
+	Queue    = "notifications"
+	Key      = "new_notification"
+)
+
 type Client interface {
 	Init() error
 	Dispose() error
@@ -31,34 +37,37 @@ func (nc *NotificationClient) Init() (err error) {
 	}
 	defer ch.Close()
 
-	if err = ch.ExchangeDeclare(nc.cfg.Exchange, "direct",
+	if err = ch.ExchangeDeclare(Exchange, "direct",
 		true,  // durable
 		false, // auto-deleted
 		false, // internal
 		false, // noWait
 		nil,   // arguments
 	); err != nil {
-		return fmt.Errorf("couldn't create exchange %s: %w", nc.cfg.Exchange, err)
+		return fmt.Errorf("couldn't create exchange %s: %w", Exchange, err)
 	}
 
-	if _, err = ch.QueueDeclare(nc.cfg.Queue,
+	if _, err = ch.QueueDeclare(Queue,
 		true,  // durable
 		false, // auto-deleted
 		false, // internal
 		false, // noWait
 		nil,   // arguments
 	); err != nil {
-		return fmt.Errorf("couldn't create queue %s: %w", nc.cfg.Queue, err)
+		return fmt.Errorf("couldn't create queue %s: %w", Queue, err)
 	}
 
-	if err = ch.QueueBind(nc.cfg.Queue, nc.cfg.Key, nc.cfg.Exchange, false, nil); err != nil {
+	if err = ch.QueueBind(Queue, Key, Exchange, false, nil); err != nil {
 		return fmt.Errorf("error binding queue='%s' to exchange='%s' with routing key='%s': %w",
-			nc.cfg.Queue, nc.cfg.Exchange, nc.cfg.Key, err)
+			Queue, Exchange, Key, err)
 	}
 
 	return nil
 }
 
 func (nc *NotificationClient) Dispose() (err error) {
-	return nc.conn.Close()
+	if nc.conn != nil {
+		return nc.conn.Close()
+	}
+	return nil
 }

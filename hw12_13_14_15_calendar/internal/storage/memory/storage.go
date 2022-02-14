@@ -9,24 +9,28 @@ import (
 )
 
 type Storage struct {
-	events *EventRepository
-	cfg    configs.StorageConf
-	mu     *sync.RWMutex
+	events        *EventRepository
+	notifications *NotificationRepository
+	cfg           configs.StorageConf
+	mu            *sync.RWMutex
 }
 
 func New(cfg configs.StorageConf) *Storage {
 	m := sync.RWMutex{}
 	return &Storage{
-		events: &EventRepository{
-			mu: &m,
-		},
-		cfg: cfg,
-		mu:  &m,
+		events:        &EventRepository{mu: &m},
+		notifications: &NotificationRepository{mu: &m},
+		cfg:           cfg,
+		mu:            &m,
 	}
 }
 
 func (s *Storage) Events() basic.EventRepository {
 	return s.events
+}
+
+func (s *Storage) Notifications() basic.NotificationRepository {
+	return s.notifications
 }
 
 func (s *Storage) Init(_ context.Context) error {
