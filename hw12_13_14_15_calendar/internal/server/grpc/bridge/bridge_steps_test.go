@@ -184,7 +184,11 @@ func seedSteps(now time.Time) []eventStep {
 			week = week.AddDate(0, 0, 1)
 		}
 	}
-	month := time.Date(now.Year(), now.Month(), 15, 12, 0, 0, 0, time.UTC)
+	monthDay := 28
+	if now.Day() > 15 {
+		monthDay = 1
+	}
+	month := time.Date(now.Year(), now.Month(), monthDay, 12, 0, 0, 0, time.UTC)
 	return []eventStep{
 		{
 			action: "create", expectedErr: nil, e: models.Event{
