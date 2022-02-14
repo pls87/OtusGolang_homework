@@ -5,6 +5,8 @@ services:
     image: postgres:latest
     env_file:
       - db.env
+    ports:
+      - "5432:5432"
     networks:
       main:
         aliases:
@@ -19,16 +21,10 @@ services:
       main:
         aliases:
           - adminer
-  api:
-    image: calendarapi:develop
-    depends_on:
-      - db
-    networks:
-      main:
-        aliases:
-          - api
   rabbit:
     image: rabbitmq:3-alpine
+    ports:
+      - "5672:5672"
     env_file:
       - rabbit.env
     networks:

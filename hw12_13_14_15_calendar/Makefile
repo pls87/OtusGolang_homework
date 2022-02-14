@@ -13,18 +13,15 @@ $(addprefix build-, $(APPS)): build-%: %
 	go build -v -o ./bin/$< -ldflags "$(LDFLAGS)" ./cmd/$<
 
 run-migrate:
-	./bin/calendar migrate --config ./configs/templates/config.toml
+	./bin/calendar migrate --config ./configs/sample.toml
 
 $(addprefix run-, $(APPS)): run-%: % build-% run-migrate
-	./bin/$< --config ./configs/templates/config.toml
+	./bin/$< --config ./configs/sample.toml
 
 build: build-calendar build-scheduler build-sender
 
 build-api-img:
 	docker build --build-arg=LDFLAGS="$(LDFLAGS)" -t $(DOCKER_API_IMG) -f build/api.Dockerfile .
-
-run-api-in-container: build-api-img
-	docker compose -p calendar -f deployments/docker-compose.yaml run api
 
 version: build
 	$(BIN) version

@@ -40,7 +40,7 @@ type APIConf struct {
 
 type QueueConf struct {
 	User     string `toml:"user"`
-	Password string `toml:"pass"`
+	Password string `toml:"password"`
 	Host     string `toml:"host"`
 	Port     int    `toml:"port"`
 }

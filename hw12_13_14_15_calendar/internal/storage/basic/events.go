@@ -27,10 +27,8 @@ type EventRepository interface {
 type EventExpression interface {
 	User(id models.ID) EventExpression
 	StartsIn(tf models.Timeframe) EventExpression
-	StartsLater(d time.Time) EventExpression
-	StartsBefore(d time.Time) EventExpression
-	StartsLast(d time.Duration) EventExpression
 	Intersects(tf models.Timeframe) EventExpression
+	ToNotify() EventExpression
 	Execute(ctx context.Context) (EventIterator, error)
 }
 
@@ -38,36 +36,19 @@ type EventExpressionParams struct {
 	UserID       models.ID
 	Starts       models.Timeframe
 	Intersection models.Timeframe
+	ToNotify     time.Time
 }
 
 func (ee *EventExpressionParams) User(id models.ID) {
 	ee.UserID = id
 }
 
+func (ee *EventExpressionParams) Notify() {
+	ee.ToNotify = time.Now()
+}
+
 func (ee *EventExpressionParams) StartsIn(tf models.Timeframe) {
 	ee.Starts = tf
-}
-
-func (ee *EventExpressionParams) StartsLater(d time.Time) {
-	ee.StartsIn(models.Timeframe{
-		Start:    d,
-		Duration: models.MaxDuration,
-	})
-}
-
-func (ee *EventExpressionParams) StartsBefore(d time.Time) {
-	minDate := time.Unix(0, 0)
-	ee.StartsIn(models.Timeframe{
-		Start:    minDate,
-		Duration: d.Sub(minDate),
-	})
-}
-
-func (ee *EventExpressionParams) StartsLast(d time.Duration) {
-	ee.StartsIn(models.Timeframe{
-		Start:    time.Now().Add(-d),
-		Duration: d,
-	})
 }
 
 func (ee *EventExpressionParams) Intersects(tf models.Timeframe) {
@@ -77,6 +58,9 @@ func (ee *EventExpressionParams) Intersects(tf models.Timeframe) {
 func (ee *EventExpressionParams) CheckEvent(e models.Event) bool {
 	if ee.UserID > 0 && e.UserID != ee.UserID {
 		return false
+	}
+	if !ee.ToNotify.IsZero() {
+		return e.Start.After(ee.ToNotify) && e.Start.Sub(ee.ToNotify) < e.NotifyBefore
 	}
 	if !ee.Starts.Start.IsZero() && !(e.Start.After(ee.Starts.Start) && e.Start.Before(ee.Starts.End())) {
 		return false

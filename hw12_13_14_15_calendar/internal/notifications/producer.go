@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/configs"
 	"github.com/streadway/amqp"
 )
 
@@ -64,4 +65,10 @@ func (ap *NotificationProducer) Produce(message Message, reliable bool) (err err
 	}
 
 	return err
+}
+
+func NewProducer(c configs.QueueConf) Producer {
+	return &NotificationProducer{
+		NotificationClient{cfg: c},
+	}
 }

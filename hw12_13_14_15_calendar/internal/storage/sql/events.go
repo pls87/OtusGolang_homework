@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/storage/basic"
@@ -25,23 +24,13 @@ func (ee *EventExpression) User(id models.ID) basic.EventExpression {
 	return ee
 }
 
+func (ee *EventExpression) ToNotify() basic.EventExpression {
+	ee.params.Notify()
+	return ee
+}
+
 func (ee *EventExpression) StartsIn(tf models.Timeframe) basic.EventExpression {
 	ee.params.StartsIn(tf)
-	return ee
-}
-
-func (ee *EventExpression) StartsLater(d time.Time) basic.EventExpression {
-	ee.params.StartsLater(d)
-	return ee
-}
-
-func (ee *EventExpression) StartsBefore(d time.Time) basic.EventExpression {
-	ee.params.StartsBefore(d)
-	return ee
-}
-
-func (ee *EventExpression) StartsLast(d time.Duration) basic.EventExpression {
-	ee.params.StartsLast(d)
 	return ee
 }
 
@@ -84,13 +73,20 @@ func (s *EventIterator) ToArray() ([]models.Event, error) {
 
 // Execute TODO: clean up this code later.
 func (ee *EventExpression) Execute(ctx context.Context) (basic.EventIterator, error) {
-	clauseBuilder := make([]string, 0, 3)
-	clauseArgs := make([]interface{}, 0, 7)
+	clauseBuilder := make([]string, 0, 4)
+	clauseArgs := make([]interface{}, 0, 9)
 	ind := 0
 	if ee.params.UserID > 0 {
 		clauseBuilder = append(clauseBuilder, fmt.Sprintf("(user_id=$%d)", ind+1))
 		clauseArgs = append(clauseArgs, ee.params.UserID)
 		ind++
+	}
+	if !ee.params.ToNotify.IsZero() {
+		clauseBuilder = append(clauseBuilder,
+			fmt.Sprintf(`(start>$%d AND start - notify_before < $%d 
+				AND "ID" NOT IN (SELECT event_id from "notification_sent"))`, ind+1, ind+2))
+		clauseArgs = append(clauseArgs, ee.params.ToNotify, ee.params.ToNotify)
+		ind += 2
 	}
 	if !ee.params.Starts.Start.IsZero() {
 		clauseBuilder = append(clauseBuilder, fmt.Sprintf("(start>=$%d AND start<=$%d)", ind+1, ind+2))
@@ -112,7 +108,7 @@ func (ee *EventExpression) Execute(ctx context.Context) (basic.EventIterator, er
 		whereClause = " WHERE " + whereClause
 	}
 
-	rows, err := ee.db.QueryxContext(ctx, `SELECT * FROM "events"`+whereClause, clauseArgs) //nolint:sqlclosecheck
+	rows, err := ee.db.QueryxContext(ctx, `SELECT * FROM "events"`+whereClause, clauseArgs...) //nolint:sqlclosecheck
 	if err != nil {
 		return nil, err
 	}

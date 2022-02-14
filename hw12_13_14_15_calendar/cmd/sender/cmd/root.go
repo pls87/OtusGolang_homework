@@ -26,6 +26,7 @@ var (
 		Short: "A background process to send notifications",
 		Run: func(cmd *cobra.Command, args []string) {
 			consumer := notifications.NewConsumer(cfg.Queue)
+			logg.Info(cfg.Queue)
 
 			ctx, cancel := signal.NotifyContext(context.Background(),
 				syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
@@ -38,6 +39,11 @@ var (
 			}
 
 			logg.Info("connecting to queue...")
+			if err := consumer.Init(); err != nil {
+				logg.Error("failed to connect to queue: " + err.Error())
+				cancel()
+				os.Exit(1)
+			}
 
 			messages, errors, err := consumer.Consume(consumerTag)
 			if err != nil {

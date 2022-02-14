@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"sync"
-	"time"
 
 	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/storage/basic"
 	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/storage/models"
@@ -63,23 +62,13 @@ func (ee *EventExpression) User(id models.ID) basic.EventExpression {
 	return ee
 }
 
+func (ee *EventExpression) ToNotify() basic.EventExpression {
+	ee.params.Notify()
+	return ee
+}
+
 func (ee *EventExpression) StartsIn(tf models.Timeframe) basic.EventExpression {
 	ee.params.StartsIn(tf)
-	return ee
-}
-
-func (ee *EventExpression) StartsLater(d time.Time) basic.EventExpression {
-	ee.params.StartsLater(d)
-	return ee
-}
-
-func (ee *EventExpression) StartsBefore(d time.Time) basic.EventExpression {
-	ee.params.StartsBefore(d)
-	return ee
-}
-
-func (ee *EventExpression) StartsLast(d time.Duration) basic.EventExpression {
-	ee.params.StartsLast(d)
 	return ee
 }
 

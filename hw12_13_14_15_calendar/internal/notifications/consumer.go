@@ -2,11 +2,14 @@ package notifications
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/configs"
 	"github.com/streadway/amqp"
 )
+
+var ErrCouldNotOpenChannel = errors.New("couldn't open channel")
 
 type Consumer interface {
 	Client
@@ -17,19 +20,10 @@ type NotificationConsumer struct {
 	NotificationClient
 }
 
-func (nc *NotificationConsumer) openChannel() (ch *amqp.Channel, err error) {
-	ch, err = nc.conn.Channel()
-	if err != nil {
-		return nil, fmt.Errorf("couldn't open channel: %w", err)
-	}
-
-	return ch, err
-}
-
 func (nc *NotificationConsumer) Consume(tag string) (messages <-chan Message, errors <-chan error, err error) {
 	var ch *amqp.Channel
 	if ch, err = nc.openChannel(); err != nil {
-		return nil, nil, fmt.Errorf("error while opening channnel for consuming: %w", err)
+		return nil, nil, fmt.Errorf("error while opening channel for consuming: %w", err)
 	}
 
 	var deliveries <-chan amqp.Delivery

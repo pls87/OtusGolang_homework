@@ -65,6 +65,18 @@ func (nc *NotificationClient) Init() (err error) {
 	return nil
 }
 
+func (nc *NotificationConsumer) openChannel() (ch *amqp.Channel, err error) {
+	if nc.conn == nil {
+		return nil, fmt.Errorf("connection is not opened: %w", ErrCouldNotOpenChannel)
+	}
+	ch, err = nc.conn.Channel()
+	if err != nil {
+		return nil, fmt.Errorf("couldn't open channel: %w", err)
+	}
+
+	return ch, err
+}
+
 func (nc *NotificationClient) Dispose() (err error) {
 	if nc.conn != nil {
 		return nc.conn.Close()
