@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/storage/basic"
@@ -184,6 +185,12 @@ func (s *EventRepository) Delete(ctx context.Context, id models.ID) error {
 		return fmt.Errorf("DELETE: event id=%d: %w", id, basic.ErrDoesNotExist)
 	}
 	return nil
+}
+
+func (s *EventRepository) DeleteObsolete(ctx context.Context, ttl time.Duration) error {
+	_, err := s.db.ExecContext(ctx, `DELETE FROM "events" WHERE start + $1 < $2`,
+		fmt.Sprintf("%d nanoseconds", ttl.Nanoseconds()), time.Now())
+	return err
 }
 
 func (s *EventRepository) Select() basic.EventExpression {

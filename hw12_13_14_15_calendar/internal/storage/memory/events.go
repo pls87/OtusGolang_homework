@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"sync"
+	"time"
 
 	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/storage/basic"
 	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/storage/models"
@@ -137,6 +138,18 @@ func (ee *EventRepository) Delete(_ context.Context, id models.ID) error {
 	}
 
 	return fmt.Errorf("DELETE: event id=%d: %w", id, basic.ErrDoesNotExist)
+}
+
+func (ee *EventRepository) DeleteObsolete(_ context.Context, ttl time.Duration) error {
+	ee.mu.Lock()
+	defer ee.mu.Unlock()
+	for k, v := range ee.data {
+		if v.Start.Add(ttl).Before(time.Now()) {
+			delete(ee.data, k)
+		}
+	}
+
+	return nil
 }
 
 func (ee *EventRepository) Select() basic.EventExpression {
