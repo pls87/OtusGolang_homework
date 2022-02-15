@@ -36,21 +36,18 @@ func (rc *RootCMD) run() {
 	rc.consumer = notifications.NewConsumer(rc.cfg.Queue)
 	rc.logg.Info(rc.cfg.Queue)
 
-	ctx, cancel := signal.NotifyContext(context.Background(),
+	ctx, _ := signal.NotifyContext(context.Background(),
 		syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
-	defer cancel()
 
 	rc.logg.Info("connecting to queue...")
 	if err := rc.consumer.Init(); err != nil {
 		rc.logg.Error("failed to connect to queue: " + err.Error())
-		cancel()
 		os.Exit(1)
 	}
 
 	messages, errors, err := rc.consumer.Consume(consumerTag)
 	if err != nil {
 		rc.logg.Errorf("couldn't connect to queue: %s", err)
-		cancel()
 		os.Exit(1)
 	}
 

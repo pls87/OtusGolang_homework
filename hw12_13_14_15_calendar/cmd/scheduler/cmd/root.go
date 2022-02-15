@@ -42,21 +42,18 @@ func (rc *RootCMD) run() {
 	rc.storage = storage.New(rc.cfg.Storage)
 	rc.producer = notifications.NewProducer(rc.cfg.Queue)
 
-	ctx, cancel := signal.NotifyContext(context.Background(),
+	ctx, _ := signal.NotifyContext(context.Background(),
 		syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
-	defer cancel()
 
 	rc.logg.Info("connecting to storage...")
 	if err := rc.storage.Init(ctx); err != nil {
 		rc.logg.Error("failed to connect to storage: " + err.Error())
-		cancel()
 		os.Exit(1)
 	}
 
 	rc.logg.Info("connecting to queue...")
 	if err := rc.producer.Init(); err != nil {
 		rc.logg.Error("failed to connect to queue: " + err.Error())
-		cancel()
 		os.Exit(1)
 	}
 
