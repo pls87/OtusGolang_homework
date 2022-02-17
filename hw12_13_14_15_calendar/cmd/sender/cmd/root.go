@@ -9,11 +9,10 @@ import (
 	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/configs"
 	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/logger"
 	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/notifications"
+	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/sender"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
-
-const consumerTag = "calendar_sender"
 
 type RootCMD struct {
 	*cobra.Command
@@ -22,6 +21,8 @@ type RootCMD struct {
 	logg    *logrus.Logger
 
 	consumer notifications.Consumer
+
+	sender sender.Sender
 }
 
 var rc *RootCMD
@@ -32,9 +33,16 @@ func (rc *RootCMD) shutDown() {
 	}
 }
 
+func (rc *RootCMD) messageHandler(m notifications.Message) {
+	rc.logg.Infof("received message: %v", m)
+}
+
+func (rc *RootCMD) errorHandler(e error) {
+	rc.logg.Errorf("error while consuming message: %s", e)
+}
+
 func (rc *RootCMD) run() {
 	rc.consumer = notifications.NewConsumer(rc.cfg.Queue)
-	rc.logg.Info(rc.cfg.Queue)
 
 	ctx, _ := signal.NotifyContext(context.Background(),
 		syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
@@ -45,32 +53,14 @@ func (rc *RootCMD) run() {
 		os.Exit(1)
 	}
 
-	messages, errors, err := rc.consumer.Consume(consumerTag)
-	if err != nil {
-		rc.logg.Errorf("couldn't connect to queue: %s", err)
+	rc.sender = sender.NewSender(rc.consumer, rc.messageHandler, rc.errorHandler)
+	if err := rc.sender.Consume(); err != nil {
+		rc.logg.Errorf("couldn't consume messages: %s", err)
 		os.Exit(1)
 	}
 
-	var e error
-	var m notifications.Message
-	for ok := true; ok; {
-		select {
-		case e, ok = <-errors:
-			if !ok {
-				break
-			}
-			rc.logg.Errorf("error from consumer: %s", e)
-		case m, ok = <-messages:
-			if !ok {
-				break
-			}
-			rc.logg.Infof("Received message: %v", m)
-		case <-ctx.Done():
-			ok = false
-		}
-	}
-
-	rc.shutDown()
+	defer rc.shutDown()
+	<-ctx.Done()
 }
 
 func (rc *RootCMD) init() {

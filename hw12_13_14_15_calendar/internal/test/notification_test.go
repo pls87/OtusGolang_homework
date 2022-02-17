@@ -70,7 +70,3 @@ func (s *NotificationsTestSuite) TearDownTest() {
 	s.NoError(s.storage.Dispose())
 	s.NoError(s.prod.Dispose())
 }
-
-func (s *NotificationsTestSuite) runScheduler() {
-
-}
