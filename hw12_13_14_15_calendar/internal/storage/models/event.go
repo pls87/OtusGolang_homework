@@ -31,7 +31,7 @@ func (t *Timeframe) Period(d time.Time, str string) (ok bool) {
 }
 
 func (t *Timeframe) Day(d time.Time) {
-	t.Start = time.Date(d.Year(), d.Month(), d.Day(), 0, 0, 0, 0, time.Local)
+	t.Start = time.Date(d.Year(), d.Month(), d.Day(), 0, 0, 0, 0, time.UTC)
 	t.Duration = 24 * time.Hour
 }
 
@@ -40,12 +40,12 @@ func (t *Timeframe) Week(d time.Time) {
 	for dd.Weekday() != time.Monday {
 		dd = dd.AddDate(0, 0, -1)
 	}
-	t.Start = time.Date(d.Year(), d.Month(), d.Day(), 0, 0, 0, 0, time.Local)
+	t.Start = time.Date(d.Year(), dd.Month(), dd.Day(), 0, 0, 0, 0, time.UTC)
 	t.Duration = 7 * 24 * time.Hour
 }
 
 func (t *Timeframe) Month(d time.Time) {
-	t.Start = time.Date(d.Year(), d.Month(), 1, 0, 0, 0, 0, time.Local)
+	t.Start = time.Date(d.Year(), d.Month(), 1, 0, 0, 0, 0, time.UTC)
 	t.Start.AddDate(0, 1, 0)
 	t.Duration = t.Start.AddDate(0, 1, 0).Sub(t.Start)
 }

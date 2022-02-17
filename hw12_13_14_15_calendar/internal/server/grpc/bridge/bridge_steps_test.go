@@ -176,14 +176,17 @@ var basicSteps = []eventStep{
 
 func seedSteps(now time.Time) []eventStep {
 	day := time.Date(now.Year(), now.Month(), now.Day(), 12, 0, 0, 0, time.UTC)
-	week := now
-	for week.Weekday() != time.Monday {
-		if now.Day() > 15 {
+	week := day
+	if now.Day() > 15 {
+		for week.Weekday() != time.Monday {
 			week = week.AddDate(0, 0, -1)
-		} else {
+		}
+	} else {
+		for week.Weekday() != time.Sunday {
 			week = week.AddDate(0, 0, 1)
 		}
 	}
+
 	monthDay := 28
 	if now.Day() > 15 {
 		monthDay = 1
