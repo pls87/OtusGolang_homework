@@ -44,18 +44,15 @@ type EventExpressionParams struct {
 	ToNotify     time.Time
 }
 
-func (ee *EventExpressionParams) User(id models.ID) {
-	ee.UserID = id
+func (ee *EventExpressionParams) Intersects(e models.Event) bool {
+	return e.Start.After(ee.Intersection.Start) && e.Start.Before(ee.Intersection.End()) ||
+		ee.Intersection.Start.After(e.Start) && ee.Intersection.Start.Before(e.End())
 }
 
-func (ee *EventExpressionParams) Notify() {
-	ee.ToNotify = time.Now()
+func (ee *EventExpressionParams) Notify(e models.Event) bool {
+	return e.Start.After(ee.ToNotify) && e.Start.Sub(ee.ToNotify) < e.NotifyBefore
 }
 
-func (ee *EventExpressionParams) StartsIn(tf models.Timeframe) {
-	ee.Starts = tf
-}
-
-func (ee *EventExpressionParams) Intersects(tf models.Timeframe) {
-	ee.Intersection = tf
+func (ee *EventExpressionParams) StartsIn(e models.Event) bool {
+	return e.Start.After(ee.Starts.Start) && e.Start.Before(ee.Starts.End())
 }
