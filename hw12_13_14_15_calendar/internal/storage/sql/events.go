@@ -145,6 +145,18 @@ func (s *EventRepository) One(ctx context.Context, id models.ID) (models.Event, 
 	}
 }
 
+func (s *EventRepository) TrackSent(ctx context.Context, eventID models.ID) error {
+	query := `INSERT INTO "notification_sent" (event_id, time) VALUES ($1,TIMESTAMP WITH TIME ZONE $2)`
+	res, err := s.db.ExecContext(ctx, query, eventID, time.Now())
+	if err != nil {
+		return err
+	}
+	if affected, _ := res.RowsAffected(); affected == 0 {
+		return fmt.Errorf("tracking notification: event id=%d: %w", eventID, basic.ErrNotificationAlreadySent)
+	}
+	return nil
+}
+
 func (s *EventRepository) Create(ctx context.Context, e models.Event) (added models.Event, err error) {
 	query := `INSERT INTO "events" (title, user_id, start, duration, notify_before,  description) 
                 VALUES ($1, $2, TIMESTAMP WITH TIME ZONE $3, $4, $5, $6) RETURNING "ID"`

@@ -10,6 +10,7 @@ type Sender struct {
 	con      notifications.Consumer
 	mHandler func(m notifications.Message)
 	eHandler func(e error)
+	done     chan interface{}
 }
 
 func NewSender(c notifications.Consumer, mhandler func(m notifications.Message), ehandler func(e error)) Sender {
@@ -20,28 +21,33 @@ func NewSender(c notifications.Consumer, mhandler func(m notifications.Message),
 	}
 }
 
-func (s *Sender) Consume() error {
+func (s *Sender) Stop() {
+	s.done <- true
+}
+
+func (s *Sender) Send() error {
 	messages, errors, err := s.con.Consume(consumerTag)
 	if err != nil {
 		return err
 	}
 	var e error
 	var m notifications.Message
-	go func() {
-		for ok := true; ok; {
-			select {
-			case e, ok = <-errors:
-				if !ok {
-					break
-				}
-				s.eHandler(e)
-			case m, ok = <-messages:
-				if !ok {
-					break
-				}
-				s.mHandler(m)
+	s.done = make(chan interface{}, 1)
+	for ok := true; ok; {
+		select {
+		case e, ok = <-errors:
+			if !ok {
+				break
 			}
+			s.eHandler(e)
+		case m, ok = <-messages:
+			if !ok {
+				break
+			}
+			s.mHandler(m)
+		case <-s.done:
+			return nil
 		}
-	}()
+	}
 	return nil
 }

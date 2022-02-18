@@ -10,40 +10,48 @@ import (
 )
 
 type Scheduler struct {
-	prod    notifications.Producer
-	storage basic.Storage
-	ticker  *time.Ticker
-	errors  chan error
+	prod     notifications.Producer
+	storage  basic.Storage
+	ticker   *time.Ticker
+	done     chan interface{}
+	eHandler func(e error)
 }
 
-func NewScheduler(p notifications.Producer, s basic.Storage) Scheduler {
+func NewScheduler(p notifications.Producer, s basic.Storage, eHandler func(e error)) Scheduler {
 	return Scheduler{
-		prod:    p,
-		storage: s,
+		prod:     p,
+		storage:  s,
+		eHandler: eHandler,
 	}
 }
 
-func (s *Scheduler) Start(interval time.Duration) (errors <-chan error) {
+func (s *Scheduler) handleTick() {
+	e := s.removeObsolete(context.Background())
+	if e != nil {
+		s.eHandler(fmt.Errorf("couldn't remove obsolete events: %w", e))
+	}
+	e = s.generateNotifications()
+	if e != nil {
+		s.eHandler(fmt.Errorf("couldn't generate notifications: %w", e))
+	}
+}
+
+func (s *Scheduler) Start(interval time.Duration) {
 	s.ticker = time.NewTicker(interval)
-	s.errors = make(chan error)
-	go func() {
-		for range s.ticker.C {
-			err := s.removeObsolete(context.Background())
-			if err != nil {
-				s.errors <- fmt.Errorf("couldn't remove obsolete events: %w", err)
-			}
-			err = s.generateNotifications()
-			if err != nil {
-				s.errors <- fmt.Errorf("couldn't generate notifications: %w", err)
-			}
+	s.done = make(chan interface{}, 1)
+	for {
+		select {
+		case <-s.ticker.C:
+			s.handleTick()
+		case <-s.done:
+			return
 		}
-	}()
-	return s.errors
+	}
 }
 
 func (s *Scheduler) Stop() {
 	s.ticker.Stop()
-	close(s.errors)
+	s.done <- true
 }
 
 func (s *Scheduler) removeObsolete(ctx context.Context) error {
@@ -72,7 +80,7 @@ func (s *Scheduler) generateNotifications() error {
 			return fmt.Errorf("couldn't send notification to queue: %w", e)
 		}
 
-		e = s.storage.Notifications().TrackSent(context.Background(), cur.ID)
+		e = s.storage.Events().TrackSent(context.Background(), cur.ID)
 		if e != nil {
 			return fmt.Errorf("couldn't mark notification sent: %w", e)
 		}

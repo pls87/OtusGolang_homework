@@ -2,10 +2,13 @@ package basic
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/storage/models"
 )
+
+var ErrNotificationAlreadySent = errors.New("notification already sent")
 
 type EventIterator interface {
 	Next() bool
@@ -23,6 +26,7 @@ type EventRepository interface {
 	Update(ctx context.Context, e models.Event) error
 	Delete(ctx context.Context, id models.ID) error
 	DeleteObsolete(ctx context.Context, ttl time.Duration) error
+	TrackSent(ctx context.Context, ID models.ID) error
 }
 
 type EventExpression interface {
@@ -54,24 +58,4 @@ func (ee *EventExpressionParams) StartsIn(tf models.Timeframe) {
 
 func (ee *EventExpressionParams) Intersects(tf models.Timeframe) {
 	ee.Intersection = tf
-}
-
-func (ee *EventExpressionParams) CheckEvent(e models.Event) bool {
-	if ee.UserID > 0 && e.UserID != ee.UserID {
-		return false
-	}
-	if !ee.ToNotify.IsZero() {
-		return e.Start.After(ee.ToNotify) && e.Start.Sub(ee.ToNotify) < e.NotifyBefore
-	}
-	if !ee.Starts.Start.IsZero() && !(e.Start.After(ee.Starts.Start) && e.Start.Before(ee.Starts.End())) {
-		return false
-	}
-
-	if !ee.Intersection.Start.IsZero() &&
-		!((e.Start.After(ee.Intersection.Start) && e.Start.Before(ee.Intersection.End())) ||
-			(e.Timeframe.End().After(ee.Intersection.Start) && e.Timeframe.End().Before(ee.Intersection.End()))) {
-		return false
-	}
-
-	return true
 }

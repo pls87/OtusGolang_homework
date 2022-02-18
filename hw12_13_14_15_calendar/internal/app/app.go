@@ -5,20 +5,16 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type Application interface {
-	Events() EventApplication
+type Application struct {
+	events EventApplication
 }
 
-type App struct {
-	events *EventApp
-}
-
-func (a *App) Events() EventApplication {
+func (a *Application) Events() EventApplication {
 	return a.events
 }
 
 func New(logger *logrus.Logger, storage basic.Storage) Application {
-	return &App{
+	return Application{
 		events: NewEventApp(storage, logger),
 	}
 }

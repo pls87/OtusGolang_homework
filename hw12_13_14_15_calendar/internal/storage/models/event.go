@@ -16,7 +16,6 @@ func (t *Timeframe) End() time.Time {
 }
 
 func (t *Timeframe) Period(d time.Time, str string) (ok bool) {
-	ok = true
 	switch str {
 	case "day":
 		t.Day(d)
@@ -25,9 +24,9 @@ func (t *Timeframe) Period(d time.Time, str string) (ok bool) {
 	case "month":
 		t.Month(d)
 	default:
-		ok = false
+		return false
 	}
-	return ok
+	return true
 }
 
 func (t *Timeframe) Day(d time.Time) {
@@ -40,7 +39,7 @@ func (t *Timeframe) Week(d time.Time) {
 	for dd.Weekday() != time.Monday {
 		dd = dd.AddDate(0, 0, -1)
 	}
-	t.Start = time.Date(d.Year(), dd.Month(), dd.Day(), 0, 0, 0, 0, time.UTC)
+	t.Start = time.Date(dd.Year(), dd.Month(), dd.Day(), 0, 0, 0, 0, time.UTC)
 	t.Duration = 7 * 24 * time.Hour
 }
 

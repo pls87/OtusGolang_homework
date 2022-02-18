@@ -57,7 +57,7 @@ func (s *bridgeTestSuite) TestFilterMonthOperation() {
 	s.NoError(err)
 
 	events := protoCollection2Events(ec)
-	s.compareSlices(steps[2].expectedRes, events)
+	s.ElementsMatch(steps[2].expectedRes, events)
 }
 
 func (s *bridgeTestSuite) TestFilterWeekOperation() {
@@ -68,7 +68,7 @@ func (s *bridgeTestSuite) TestFilterWeekOperation() {
 	s.NoError(err)
 
 	events := protoCollection2Events(ec)
-	s.compareSlices(steps[2].expectedRes[0:2], events)
+	s.ElementsMatch(steps[2].expectedRes[0:2], events)
 }
 
 func (s *bridgeTestSuite) TestFilterDayOperation() {
@@ -80,10 +80,10 @@ func (s *bridgeTestSuite) TestFilterDayOperation() {
 
 	events := protoCollection2Events(ec)
 	l := 1
-	if s.now.Weekday() == time.Monday {
+	if (s.now.Day() > 15 && s.now.Weekday() == time.Monday) || (s.now.Day() < 15 && s.now.Weekday() == time.Sunday) {
 		l = 2
 	}
-	s.compareSlices(steps[2].expectedRes[0:l], events)
+	s.ElementsMatch(steps[2].expectedRes[0:l], events)
 }
 
 func (s *bridgeTestSuite) RunSteps(steps []eventStep) {
@@ -140,13 +140,6 @@ func (s *bridgeTestSuite) RunSteps(steps []eventStep) {
 		s.Equal(st.expectedRes, eventsFromStorage)
 		s.Equal(st.expectedRes, eventsFromBridge)
 	}
-}
-
-func (s *bridgeTestSuite) compareSlices(expected, actual []models.Event) {
-	s.Equal(len(expected), len(actual))
-	sort.Slice(expected, func(i, j int) bool { return expected[i].ID < expected[j].ID })
-	sort.Slice(actual, func(i, j int) bool { return actual[i].ID < actual[j].ID })
-	s.Equal(expected, actual)
 }
 
 func TestStorage(t *testing.T) {

@@ -28,6 +28,7 @@ type RootCMD struct {
 var rc *RootCMD
 
 func (rc *RootCMD) shutDown() {
+	rc.sender.Stop()
 	if err := rc.consumer.Dispose(); err != nil {
 		rc.logg.Errorf("error while consumer shut down: %s", err)
 	}
@@ -54,13 +55,12 @@ func (rc *RootCMD) run() {
 	}
 
 	rc.sender = sender.NewSender(rc.consumer, rc.messageHandler, rc.errorHandler)
-	if err := rc.sender.Consume(); err != nil {
+	if err := rc.sender.Send(); err != nil {
 		rc.logg.Errorf("couldn't consume messages: %s", err)
 		os.Exit(1)
 	}
-
-	defer rc.shutDown()
 	<-ctx.Done()
+	rc.shutDown()
 }
 
 func (rc *RootCMD) init() {

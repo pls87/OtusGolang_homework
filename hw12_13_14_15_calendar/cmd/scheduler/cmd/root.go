@@ -42,11 +42,15 @@ func (rc *RootCMD) shutDown() {
 	}
 }
 
+func (rc *RootCMD) onError(e error) {
+	rc.logg.Errorf("error while handling event: %s", e)
+}
+
 func (rc *RootCMD) run() {
 	rc.storage = storage.New(rc.cfg.Storage)
 	rc.producer = notifications.NewProducer(rc.cfg.Queue)
 
-	rc.scheduler = scheduler.NewScheduler(rc.producer, rc.storage)
+	rc.scheduler = scheduler.NewScheduler(rc.producer, rc.storage, rc.onError)
 
 	ctx, _ := signal.NotifyContext(context.Background(),
 		syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
@@ -63,16 +67,13 @@ func (rc *RootCMD) run() {
 		os.Exit(1)
 	}
 
-	errors := rc.scheduler.Start(2 * time.Second)
-	defer rc.shutDown()
-	for {
-		select {
-		case e := <-errors:
-			rc.logg.Errorf("error while handling event: %s", e)
-		case <-ctx.Done():
-			return
-		}
-	}
+	go func() {
+		rc.scheduler.Start(2 * time.Second)
+	}()
+
+	<-ctx.Done()
+
+	rc.shutDown()
 }
 
 func (rc *RootCMD) init() {
