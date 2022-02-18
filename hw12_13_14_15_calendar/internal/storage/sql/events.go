@@ -73,8 +73,9 @@ func (s *EventIterator) ToArray() ([]models.Event, error) {
 	var ev models.Event
 	for s.rows.Next() {
 		e := s.rows.StructScan(&ev)
-		if e == nil {
-			res = append(res, ev)
+		if e != nil {
+			_ = s.Complete()
+			return nil, e
 		}
 	}
 
@@ -178,13 +179,13 @@ func (s *EventRepository) Update(ctx context.Context, e models.Event) error {
 	return nil
 }
 
-func (s *EventRepository) Delete(ctx context.Context, e models.Event) error {
-	res, err := s.db.ExecContext(ctx, `DELETE FROM "events" WHERE ID=$1`, e.ID)
+func (s *EventRepository) Delete(ctx context.Context, id models.ID) error {
+	res, err := s.db.ExecContext(ctx, `DELETE FROM "events" WHERE ID=$1`, id)
 	if err != nil {
 		return err
 	}
 	if affected, _ := res.RowsAffected(); affected == 0 {
-		return fmt.Errorf("DELETE: event id=%d: %w", e.ID, basic.ErrDoesNotExist)
+		return fmt.Errorf("DELETE: event id=%d: %w", id, basic.ErrDoesNotExist)
 	}
 	return nil
 }

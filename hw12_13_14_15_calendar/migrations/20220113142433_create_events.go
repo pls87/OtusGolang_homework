@@ -14,7 +14,7 @@ func upCreateEvents(tx *sql.Tx) error {
 	query := `CREATE TABLE "events"
 	(
     	"ID"            serial         NOT NULL,
-    	"title"         character(255) NOT NULL,
+    	"title"         text 		   NOT NULL,
     	"start"         timestamptz    NOT NULL,
     	"duration"      interval       NOT NULL,
     	"notify_before" interval       NOT NULL,

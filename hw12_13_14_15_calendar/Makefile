@@ -9,7 +9,7 @@ build:
 	go build -v -o $(BIN) -ldflags "$(LDFLAGS)" ./cmd/calendar
 
 run: build
-	$(BIN) --config ./configs/templates/config.toml
+	$(BIN) server --config ./configs/templates/config.toml
 
 #build-img:
 #	docker build \
@@ -31,5 +31,8 @@ install-lint-deps:
 
 lint: install-lint-deps
 	golangci-lint run ./...
+
+generate-grpc:
+	protoc --go_out=internal/server/grpc --go-grpc_out=internal/server/grpc api/EventService.proto
 
 .PHONY: build run version test lint

@@ -5,7 +5,7 @@ import (
 	"sync"
 
 	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/configs"
-	basicstorage "github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/storage/basic"
+	"github.com/pls87/OtusGolang_homework/hw12_13_14_15_calendar/internal/storage/basic"
 )
 
 type Storage struct {
@@ -25,7 +25,7 @@ func New(cfg configs.StorageConf) *Storage {
 	}
 }
 
-func (s *Storage) Events() basicstorage.EventRepository {
+func (s *Storage) Events() basic.EventRepository {
 	return s.events
 }
 
