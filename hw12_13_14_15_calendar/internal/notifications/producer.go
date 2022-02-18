@@ -67,7 +67,7 @@ func (ap *NotificationProducer) Produce(message Message, reliable bool) (err err
 	return err
 }
 
-func NewProducer(c configs.QueueConf) Producer {
+func NewProducer(c configs.NotificationConf) Producer {
 	return &NotificationProducer{
 		NotificationClient{cfg: c},
 	}

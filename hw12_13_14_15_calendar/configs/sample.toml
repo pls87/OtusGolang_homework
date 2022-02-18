@@ -11,8 +11,9 @@ type = "grpc"
 host = "127.0.0.1"
 port = 8082
 
-[queue]
-host = "127.0.0.1"
-port = 5672
-user = "calendar_user"
-password = "password"
+[notifications]
+rabbit_host = "127.0.0.1"
+rabbit_port = 5672
+rabbit_user = "calendar_user"
+rabbit_password = "password"
+scheduler_interval = 2 #seconds

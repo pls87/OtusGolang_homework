@@ -16,33 +16,34 @@ const (
 )
 
 type Config struct {
-	Logger  LoggerConf  `toml:"logger"`
-	Storage StorageConf `toml:"storage"`
-	API     APIConf     `toml:"api"`
-	Queue   QueueConf   `toml:"queue"`
+	Logger       LoggerConf       `mapstructure:"logger"`
+	Storage      StorageConf      `mapstructure:"storage"`
+	API          APIConf          `mapstructure:"api"`
+	Notification NotificationConf `mapstructure:"notifications"`
 }
 
 type LoggerConf struct {
-	Level string `toml:"level"`
+	Level string `mapstructure:"level"`
 }
 
 type StorageConf struct {
-	Type   string `toml:"type"`
-	Driver string `toml:"driver"`
-	Conn   string `toml:"conn"`
+	Type   string `mapstructure:"type"`
+	Driver string `mapstructure:"driver"`
+	Conn   string `mapstructure:"conn"`
 }
 
 type APIConf struct {
-	Type string `toml:"type"`
-	Host string `toml:"host"`
-	Port int    `toml:"port"`
+	Type string `mapstructure:"type"`
+	Host string `mapstructure:"host"`
+	Port int    `mapstructure:"port"`
 }
 
-type QueueConf struct {
-	User     string `toml:"user"`
-	Password string `toml:"password"`
-	Host     string `toml:"host"`
-	Port     int    `toml:"port"`
+type NotificationConf struct {
+	User     string `mapstructure:"rabbit_user"`
+	Password string `mapstructure:"rabbit_password"`
+	Host     string `mapstructure:"rabbit_host"`
+	Port     int    `mapstructure:"rabbit_port"`
+	Interval int    `mapstructure:"scheduler_interval"`
 }
 
 func New(cfgFile string) Config {
@@ -50,7 +51,7 @@ func New(cfgFile string) Config {
 		Logger:  LoggerConf{Level: DefaultLogLevel},
 		Storage: StorageConf{Type: DefaultStorageType},
 		API:     APIConf{Type: DefaultAPIType, Port: DefaultAPIPort},
-		Queue: QueueConf{
+		Notification: NotificationConf{
 			Port: DefaultQueuePort,
 			Host: DefaultQueueHost,
 		},

@@ -70,7 +70,7 @@ func (nc *NotificationConsumer) Consume(tag string) (messages <-chan Message, er
 	return msgs, errs, nil
 }
 
-func NewConsumer(c configs.QueueConf) Consumer {
+func NewConsumer(c configs.NotificationConf) Consumer {
 	return &NotificationConsumer{
 		NotificationClient{
 			cfg: c,

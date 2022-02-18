@@ -48,7 +48,7 @@ func (rc *RootCMD) onError(e error) {
 
 func (rc *RootCMD) run() {
 	rc.storage = storage.New(rc.cfg.Storage)
-	rc.producer = notifications.NewProducer(rc.cfg.Queue)
+	rc.producer = notifications.NewProducer(rc.cfg.Notification)
 
 	rc.scheduler = scheduler.NewScheduler(rc.producer, rc.storage, rc.onError)
 
@@ -68,7 +68,7 @@ func (rc *RootCMD) run() {
 	}
 
 	go func() {
-		rc.scheduler.Start(2 * time.Second)
+		rc.scheduler.Start(time.Duration(rc.cfg.Notification.Interval) * time.Second)
 	}()
 
 	<-ctx.Done()
@@ -98,7 +98,7 @@ func Execute() error {
 }
 
 func init() {
-	cmd := newRootCommand()
-	cobra.OnInitialize(cmd.init)
-	cmd.PersistentFlags().StringVar(&cmd.cfgFile, "config", "", "config file")
+	rc = newRootCommand()
+	cobra.OnInitialize(rc.init)
+	rc.PersistentFlags().StringVar(&rc.cfgFile, "config", "", "config file")
 }

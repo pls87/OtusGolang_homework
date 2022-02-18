@@ -59,8 +59,8 @@ func (s *EventRepository) Create(ctx context.Context, e models.Event) (added mod
                 VALUES ($1, $2, TIMESTAMP WITH TIME ZONE $3, $4, $5, $6) RETURNING "ID"`
 	lastID := 0
 	err = s.DB.QueryRowxContext(
-		ctx, query, e.Title, e.UserID, e.Start, fmt.Sprintf("%d nanoseconds", e.Duration.Nanoseconds()),
-		fmt.Sprintf("%d nanoseconds", e.NotifyBefore.Nanoseconds()), e.Desc).Scan(&lastID)
+		ctx, query, e.Title, e.UserID, e.Start, fmt.Sprintf("%d seconds", int(e.Duration.Seconds())),
+		fmt.Sprintf("%d seconds", int(e.NotifyBefore.Seconds())), e.Desc).Scan(&lastID)
 
 	if err == nil {
 		e.ID = models.ID(lastID)
@@ -74,8 +74,8 @@ func (s *EventRepository) Update(ctx context.Context, e models.Event) error {
         title=$1, user_id=?, start=TIMESTAMP WITH TIME ZONE $2, 
         duration=$3, notify_before=$4,  description=$5 WHERE ID=$6`
 	res, err := s.DB.ExecContext(ctx, query, e.Title, e.UserID, e.Start,
-		fmt.Sprintf("%d nanoseconds", e.Duration.Nanoseconds()),
-		fmt.Sprintf("%d nanoseconds", e.NotifyBefore.Nanoseconds()), e.Desc, e.ID)
+		fmt.Sprintf("%d seconds", int(e.Duration.Seconds())),
+		fmt.Sprintf("%d seconds", int(e.NotifyBefore.Seconds())), e.Desc, e.ID)
 	if err != nil {
 		return err
 	}
@@ -98,7 +98,7 @@ func (s *EventRepository) Delete(ctx context.Context, id models.ID) error {
 
 func (s *EventRepository) DeleteObsolete(ctx context.Context, ttl time.Duration) error {
 	_, err := s.DB.ExecContext(ctx, `DELETE FROM "events" WHERE start + $1 < $2`,
-		fmt.Sprintf("%d nanoseconds", ttl.Nanoseconds()), time.Now())
+		fmt.Sprintf("%d seconds", int(ttl.Seconds())), time.Now())
 	return err
 }
 

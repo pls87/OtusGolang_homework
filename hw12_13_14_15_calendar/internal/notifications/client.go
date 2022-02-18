@@ -20,7 +20,7 @@ type Client interface {
 
 type NotificationClient struct {
 	conn *amqp.Connection
-	cfg  configs.QueueConf
+	cfg  configs.NotificationConf
 }
 
 func (nc *NotificationClient) Init() (err error) {

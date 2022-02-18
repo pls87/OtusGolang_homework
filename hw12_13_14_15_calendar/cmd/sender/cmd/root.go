@@ -43,7 +43,7 @@ func (rc *RootCMD) errorHandler(e error) {
 }
 
 func (rc *RootCMD) run() {
-	rc.consumer = notifications.NewConsumer(rc.cfg.Queue)
+	rc.consumer = notifications.NewConsumer(rc.cfg.Notification)
 
 	ctx, _ := signal.NotifyContext(context.Background(),
 		syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
@@ -55,10 +55,13 @@ func (rc *RootCMD) run() {
 	}
 
 	rc.sender = sender.NewSender(rc.consumer, rc.messageHandler, rc.errorHandler)
-	if err := rc.sender.Send(); err != nil {
-		rc.logg.Errorf("couldn't consume messages: %s", err)
-		os.Exit(1)
-	}
+	go func() {
+		if err := rc.sender.Send(); err != nil {
+			rc.logg.Errorf("couldn't consume messages: %s", err)
+			os.Exit(1)
+		}
+	}()
+
 	<-ctx.Done()
 	rc.shutDown()
 }
@@ -85,7 +88,7 @@ func Execute() error {
 }
 
 func init() {
-	cmd := newRootCommand()
-	cobra.OnInitialize(cmd.init)
-	cmd.PersistentFlags().StringVar(&cmd.cfgFile, "config", "", "config file")
+	rc = newRootCommand()
+	cobra.OnInitialize(rc.init)
+	rc.PersistentFlags().StringVar(&rc.cfgFile, "config", "", "config file")
 }

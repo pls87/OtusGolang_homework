@@ -46,7 +46,7 @@ func (s *Sender) Send() error {
 			}
 			s.mHandler(m)
 		case <-s.done:
-			return nil
+			ok = false
 		}
 	}
 	return nil
