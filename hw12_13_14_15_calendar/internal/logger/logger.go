@@ -14,5 +14,10 @@ func New(cfg configs.LoggerConf) *logrus.Logger {
 	if lvl, err := logrus.ParseLevel(cfg.Level); err != nil {
 		log.Level = lvl
 	}
+
+	customFormatter := new(logrus.TextFormatter)
+	customFormatter.TimestampFormat = "2006-01-02 15:04:05"
+	customFormatter.FullTimestamp = true
+	log.SetFormatter(customFormatter)
 	return log
 }

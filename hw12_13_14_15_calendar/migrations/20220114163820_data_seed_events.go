@@ -11,8 +11,9 @@ func init() {
 }
 
 func upDataSeedEvents(tx *sql.Tx) error {
-	query := `INSERT INTO "events" (title, user_id, start, duration, notify_before,  description) 
-		VALUES ('Lunch', 1, TIMESTAMP WITH TIME ZONE '2022-01-15 13:00:00+06', '1 hour', '30 minutes', 'Eat and eat again')`
+	query := `INSERT INTO "events" (title, user_id, start, duration, notify_before,  description) VALUES 
+		('Lunch', 1, TIMESTAMP WITH TIME ZONE '2022-02-15 7:00:00+00', '1 hour', '30 minutes', 'Time to eat'),
+		('Daily Scrum', 1, TIMESTAMP WITH TIME ZONE '2022-02-15 10:00:00+00', '30 minutes', '30 minutes', 'Time to meet')`
 	_, err := tx.Exec(query)
 	return err
 }

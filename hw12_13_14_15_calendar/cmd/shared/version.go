@@ -1,4 +1,4 @@
-package calendarcmd
+package shared
 
 import (
 	"encoding/json"
@@ -14,13 +14,9 @@ var (
 	GitHash   string
 )
 
-func init() {
-	rootCmd.AddCommand(versionCmd)
-}
-
-var versionCmd = &cobra.Command{
+var VersionCmd = &cobra.Command{
 	Use:   "version",
-	Short: "Print the version number of calendar app",
+	Short: "Prints the version number of api app",
 	Run: func(cmd *cobra.Command, args []string) {
 		if err := json.NewEncoder(os.Stdout).Encode(struct {
 			Release   string

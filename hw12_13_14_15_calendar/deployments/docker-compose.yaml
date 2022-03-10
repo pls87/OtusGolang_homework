@@ -3,12 +3,10 @@ version: "3"
 services:
   db:
     image: postgres:latest
-    environment:
-      POSTGRES_PASSWORD: Adminpassword321
+    env_file:
+      - db.env
     ports:
       - "5432:5432"
-    volumes:
-      - ./init/create_db.sql:/docker-entrypoint-initdb.d/create_db.sql
     networks:
       main:
         aliases:
@@ -23,7 +21,15 @@ services:
       main:
         aliases:
           - adminer
-volumes:
-  database:
+  rabbit:
+    image: rabbitmq:3-alpine
+    ports:
+      - "5672:5672"
+    env_file:
+      - rabbit.env
+    networks:
+      main:
+        aliases:
+          - rabbit
 networks:
   main:
